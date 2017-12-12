@@ -6,8 +6,8 @@ output: html_notebook
 ```{r}
 pacman::p_load(tidyverse, magrittr, stringi, qdapRegex, purrr)
 
-mw <- read_file("mw.txt")
-redice <- read_file("redice.txt")
+amazingatheist <- read_file("amazingatheist.txt")
+armored <- read_file("armored.txt")
 
 ```
 
@@ -20,7 +20,7 @@ video_list %<>%
   stri_replace_all_fixed(" ", "") %>% 
   stri_replace_all_charclass("\\p{WHITE_SPACE}", "")
 
-url <- rm_between(mw, "URL:", "Description", extract = TRUE)
+url <- rm_between(video_list, "URL:", "Description", extract = TRUE)
 
 imp_vec <- as.vector(url[[1]]) %>% 
   str_replace(pattern = "(.*v\\=)", "")
@@ -28,10 +28,11 @@ imp_vec <- as.vector(url[[1]]) %>%
 return(imp_vec)
 }
 
-mw_ids <- extract_video_ids(mw)
-redice_ids <- extract_video_ids(redice)
+amazingatheist_ids <- extract_video_ids(amazingatheist)
+armored_ids <- extract_video_ids(armored)
 
-
+head(amazingatheist_ids)
+head(armored_ids)
 ```
 
 # Trash

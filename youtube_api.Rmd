@@ -6,7 +6,7 @@ output: html_notebook
 ```{r}
 #devtools::install_github("soodoku/tuber")
 
-pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr)
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate)
 
 ```
 
@@ -23,26 +23,330 @@ tuber::yt_oauth(client_id, client_key)
 
 # Video Details
 
-- Hier gibt es zum Beispiel Tags
+Hier gibt es zum Beispiel:
+
+- Tags
+- Published Time
+- Titles
 
 ```{r}
-sargon <- get_video_details(video_id = "6s2jgb0S4a8")
 
-mw_details <- purrr::map(mw_ids, get_video_details)
+#amazingatheist_details <- purrr::map(amazingatheist_ids, get_video_details)
+#save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
 
-mw_details[[1]]$items[[1]]$snippet$publishedAt # time
+load("data/amazingatheist_details.Rdata")
 
-redice_details <- purrr::map(redice_ids, get_video_details)
+#extracting youtuber
+channel <- amazingatheist_details[[1]]$items[[1]]$snippet$channelTitle
 
-redice_details[[1]]$items[[1]]$snippet$publishedAt # time
+## Extracting Dates
+publishedAt <- vector()
+for (jj in seq_along(amazingatheist_ids)) {
+  publishedAt[[jj]] <- amazingatheist_details[[jj]]$items[[1]]$snippet$publishedAt # time
+cat(jj)
+}
+
+publishedAt %<>% 
+  as_date(publishedAt)
+
+## Extracting Titles
+titles <- vector()
+for (jj in seq_along(amazingatheist_ids)) {
+  titles[[jj]] <- amazingatheist_details[[jj]]$items[[1]]$snippet$title # titles
+cat(jj)
+}
+#titles
+
+## Extracting Tags
+tags <- list()
+for (jj in seq_along(amazingatheist_ids)) {
+  tags[[jj]] <- amazingatheist_details[[jj]]$items[[1]]$snippet$tags # tags
+cat(jj)
+}
+
+details <- tibble(channel, publishedAt, titles, tags)
+
+amazingatheist_details[[1]]
 ```
 
 # Comments!
 
 ```{r}
-sargon_comments <- get_all_comments(video_id = "xjZdOujIa-s")
 
 ```
+
+
+- ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!
+- Test if 45 never works
+- Test if 9 never works (in the second sample of 221)
+
+```{r}
+
+amazingatheist_ids <- amazingatheist_ids[221:length(amazingatheist_ids)]
+amazingatheist_comments <- list()
+for (jj in seq_along(amazingatheist_ids)) {  
+    tryCatch({
+amazingatheist_comments[[jj]] <- get_all_comments(amazingatheist_ids[jj])
+    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  cat(jj)
+}
+save(amazingatheist_comments, file = "data/amazingatheist_comments1.Rdata")
+
+aa_data <- bind_rows(amazingatheist_comments)
+save(aa_data, file = "data/aa_data.Rdata")
+
+unique(aa_data$videoId)
+```
+
+# If I only knew.. unfortunately you only get 300 videos total
+
+```{r}
+a <- list_channel_resources(filter = c(channel_id = "UCjNxszyFPasDdRoD9J6X-sw
+"), part = "contentDetails")
+
+# Uploaded playlists:
+playlist_id <- a$items[[1]]$contentDetails$relatedPlaylists$uploads
+
+# Get videos on the playlist
+vids <- get_playlist_items(filter = c(playlist_id = playlist_id)) 
+
+# Video ids
+vid_ids <- as.vector(vids$contentDetails.videoId)
+
+map_df(vid_ids, get_stats)
+
+head(res)
+
+
+```
+
+```{r}
+dataframeFromJSON <- function(l) {
+  l1 <- lapply(l, function(x) {
+    x[sapply(x, is.null)] <- NA
+    unlist(x)
+  })
+  keys <- unique(unlist(lapply(l1, names)))
+  l2 <- lapply(l1, '[', keys)
+  l3 <- lapply(l2, setNames, keys)
+  res <- data.frame(do.call(rbind, l3))
+  return(res)
+}
+
+  channel_id <- "UCjNxszyFPasDdRoD9J6X-sw"
+
+
+getAllChannelVideos2 <- function(channel_id=NULL){
+  
+channelAct <- list_channel_resources(filter = c(channel_id = channel_id), part = "contentDetails")
+
+playlist_id <- channelAct$items[[1]]$contentDetails$relatedPlaylists$uploads
+
+df <- get_playlist_items(filter = c(playlist_id = playlist_id)) 
+
+df_token <- list_channel_activities(filter = c(channel_id = channel_id), part = "contentDetails")
+  
+token <- df_token$nextPageToken
+
+  repeat{
+    channelActSub <- list_channel_resources(filter = c(channel_id = channel_id), 
+                                            part = "contentDetails",page_token = token)
+
+    df_tokenSub <- list_channel_activities(filter = c(channel_id = channel_id), 
+                                           part = "contentDetails",page_token = token)
+    
+    playlist_id_sub <- channelActSub$items[[1]]$contentDetails$relatedPlaylists$uploads
+
+    dff <- get_playlist_items(filter = c(playlist_id = playlist_id_sub)) 
+
+    df <- smartbind(df, dff)
+    
+    print(df_tokenSub$nextPageToken)
+    token <- df_tokenSub$nextPageToken
+    if(is.null(token)){
+      break
+    }
+    
+  }
+  return(df)
+}
+
+getAllChannelVideos2("UCjNxszyFPasDdRoD9J6X-sw")
+```
+
+```{r}
+getAllChannelVideos("UCjNxszyFPasDdRoD9J6X-sw")
+#list_channel_activities(filter = c(channel_id = "UCjNxszyFPasDdRoD9J6X-sw"), part = "contentDetails")
+```
+# More Trash
+
+```{r}
+# tryCatch.Rscript -- experiments with tryCatch
+ 
+# Get any arguments
+arguments <- commandArgs(trailingOnly=TRUE)
+a <- arguments[1]
+ 
+# Define a division function that can issue warnings and errors
+myDivide <- function(d, a) {
+  if (a == 'warning') {
+    return_value <- 'myDivide warning result'
+    warning("myDivide warning message")
+  } else if (a == 'error') {
+    return_value <- 'myDivide error result'
+    stop("myDivide error message")
+  } else {
+    return_value = d / as.numeric(a)
+  }
+  return(return_value)
+}
+ 
+# Evalute the desired series of expressions inside of tryCatch
+result <- tryCatch({
+ 
+  b <- 2
+  c <- b^2
+  d <- c+2
+  if (a == 'suppress-warnings') {
+    e <- suppressWarnings(myDivide(d,a))
+  } else {
+    e <- myDivide(d,a) # 6/a
+  }
+  f <- e + 100
+ 
+}, warning = function(war) {
+ 
+  # warning handler picks up where error was generated
+  print(paste("MY_WARNING:  ",war))
+  b <- "changing 'b' inside the warning handler has no effect"
+  e <- myDivide(d,0.1) # =60
+  f <- e + 100
+  return(f)
+ 
+}, error = function(err) {
+ 
+  # error handler picks up where error was generated
+  print(paste("MY_ERROR:  ",err))
+  b <- "changing 'b' inside the error handler has no effect"
+  e <- myDivide(d,0.01) # =600
+  f <- e + 100
+  return(f)
+ 
+}, finally = {
+ 
+  print(paste("a =",a))
+  print(paste("b =",b))
+  print(paste("c =",c))
+  print(paste("d =",d))
+  # NOTE:  Finally is evaluated in the context of of the inital
+  # NOTE:  tryCatch block and 'e' will not exist if a warning
+  # NOTE:  or error occurred.
+  #print(paste("e =",e))
+ 
+}) # END tryCatch
+ 
+print(paste("result =",result))
+
+devtools::install_github("ColinFay/trycatchthis")
+library(trycatchthis)
+x <- 5
+lol <- function(w){
+ ss <- try_catch(2/2, 
+          .e = ~ "There is an error")
+
+ ss
+}
+lol(w = 2)
+
+my_function <- function(input){
+amazingatheist_comments <- list()
+tryCatch({for (jj in seq_along(input)) {  
+  amazingatheist_comments[[jj]] <- get_all_comments(amazingatheist_ids[jj])},
+        ## But if an error occurs, do the following: 
+        error=function(error_message) {
+            message(paste("Video reached", baz))
+            message("Here is the actual R error message:")
+            message(error_message)
+            return(NA)) 
+  }})
+cat(jj)
+return(amazingatheist_comments)
+}
+
+amazingatheist_comments <- list()
+for (jj in seq_along(amazingatheist_ids)) {
+  tryCatch({
+    amazingatheist_comments[[jj]] <- get_all_comments(amazingatheist_ids[jj])
+  }, error = function(e){message(paste("Video reached", jj))
+    })
+      stopper <- jj
+    cat(jj)
+
+    repeat {
+for (jj in stopper:length(amazingatheist_ids)) {
+  tryCatch({
+    amazingatheist_comments[[jj]] <- get_all_comments(amazingatheist_ids[jj])
+  }, error = function(e){message(paste("Error. Last Video reached", jj))
+    })
+      stopper <- jj
+
+}
+          if(jj == length(amazingatheist_ids)){
+      break
+    }
+    }
+
+}
+amazingatheist_comments
+
+
+my_function <- function(baz){
+    tryCatch(
+        ## This is what I want to do:
+      ss <- baz/2
+        ,
+        ## But if an error occurs, do the following: 
+        error=function(error_message) {
+            message(paste("Video reached", baz))
+            message("Here is the actual R error message:")
+            message(error_message)
+            return(NA)
+        }
+    )
+              return(ss)
+
+}
+
+my_function(c(2, 3, "dffd",4))
+
+amazingatheist_comments[[1]] <- get_all_comments(amazingatheist_ids[1])
+
+ww <- seq(45,1438, 41)
+bb <- seq(85,length(amazingatheist_ids), 41)
+ww <- ww[1:34] 
+amazingatheist_comments1 <- list()
+
+
+
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[86:126])
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[127:167])
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[168:208])
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[45:85])
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[45:85])
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[45:85])
+amazingatheist_comments1 <- get_all_comments(amazingatheist_ids[45:85])
+
+
+length(amazingatheist_ids)
+
+save(amazingatheist_comments, file = "data/amazingatheist_comments.Rdata")
+
+amazingatheist_ids[1:20]
+
+amazingatheist_comments <- get_all_comments(video_id = "WL6bImDYhlQ")
+
+```
+
 
 # Trash Links for Google API
 
