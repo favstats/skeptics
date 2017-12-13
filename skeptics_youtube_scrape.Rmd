@@ -88,15 +88,61 @@ for (jj in seq_along(armored_ids)) {
 
 ```{r}
 
+# extract function
+extract_comments <- function(ids) {
+  comments <- list()
+for (jj in seq_along(ids)) {  
+  try(comments[[jj]] <- get_all_comments2(ids[jj]))
+  cat(paste0("\t",jj))
+  }
+  comments <- suppressWarnings( bind_rows(comments) )
+  message(paste("\n\nIteration stopped at:", jj))
+  return(comments)
+}
+
+# Error : HTTP failure: 401 <- AUTH ERROR
+
+# Error : HTTP failure: 400 <- nonproblematic
+# Error : HTTP failure: 403 <- nonproblematic
+
+# Try 1
+# missed
+c(44, 60, 61, 62, 73, 74, 88) # 7
+amazingatheist_comments1 <- extract_comments(amazingatheist_ids)
+
+count(unique(amazingatheist_comments1$videoId))
+
+save(amazingatheist_comments1, file = "data/amazingatheist_comments1.Rdata")
+
+# Try 2
+ 
+amazingatheist_ids1 <- amazingatheist_ids[145:length(amazingatheist_ids)]
+amazingatheist_comments2 <-  extract_comments(amazingatheist_ids1)
+
+save(amazingatheist_comments2, file = "data/amazingatheist_comments2.Rdata")
+
+# Try 3
+
+amazingatheist_ids3 <- amazingatheist_ids1[jj:length(amazingatheist_ids1)]
+amazingatheist_comments3 <-  extract_comments(amazingatheist_ids3)
+
+save(amazingatheist_comments3, file = "data/amazingatheist_comments3.Rdata")
+
+
+
+
+# old
+ 
 amazingatheist_comments1 <- list()
 for (jj in seq_along(amazingatheist_ids)) {  
-  amazingatheist_comments1[[jj]] <- get_all_comments2(thunder_ids[jj])
+  amazingatheist_comments1[[jj]] <- get_all_comments2(amazingatheist_ids[jj])
   cat(paste0("\t",jj))
 }
 
-amazingatheist_comments1 <- bind_rows(amazingatheist_comments1)
 
-save(amazingatheist_comments1, file = "data/amazingatheist_comments1.Rdata")
+save(amazingatheist_comments2, file = "data/amazingatheist_comments2.Rdata")
+
+
 
 ```
 
