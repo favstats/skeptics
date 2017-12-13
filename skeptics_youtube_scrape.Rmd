@@ -1,19 +1,42 @@
 ---
-title: "Extract URLs"
+title: "Scrape Comments"
 output: html_notebook
 ---
 
-```{r}
-pacman::p_load(tidyverse, magrittr, stringi, qdapRegex, purrr)
+# Packages
 
+```{r}
+#devtools::install_github("soodoku/tuber")
+
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr)
+
+```
+
+# Authentication
+
+```{r}
+key <- "AIzaSyDmV5jHx7c8GeAmpTkv6To_ERdkZ_HNl70"
+
+client_id <- "580511698053-p8mu77kktkcvb503g9q737svu9gcq101.apps.googleusercontent.com"
+
+client_key <- "Y0eW96yy-WRg90RZjVJS615o"
+
+tuber::yt_oauth(client_id, client_key)
+
+```
+
+# Read in TXT
+
+```{r}
 amazingatheist <- read_file("amazingatheist.txt")
 armored <- read_file("armored.txt")
 logicked <- read_file("logicked.txt")
 thunder <- read_file("thunder.txt")
-
+sargon <- read_file("sargon.txt")
 
 ```
 
+# Extract URLs
 
 ```{r}
 
@@ -31,57 +54,252 @@ imp_vec <- as.vector(url[[1]]) %>%
 return(imp_vec)
 }
 
-amazingatheist_ids <- extract_video_ids(amazingatheist)
 armored_ids <- extract_video_ids(armored)
+amazingatheist_ids <- extract_video_ids(amazingatheist)
 logicked_ids <- extract_video_ids(logicked)
 thunder_ids <- extract_video_ids(thunder)
 
-
-head(amazingatheist_ids)
 head(armored_ids)
+head(amazingatheist_ids)
 head(logicked_ids)
 head(thunder_ids)
 
 ```
 
-# Trash
+# Armored Skeptic
+
+## Scraping
 
 ```{r}
-x = "PRODUCT colgate good but not goodOKAY"
-library(stringr)
-str_extract(string = x, pattern = perl("(?<=PRODUCT).*(?=OKAY)"))
-(?<=PRODUCT) -- look behind the match for PRODUCT
-
-.* match everything except new lines.
-
-(?=OKAY) -- look ahead to match OKAY.
-
-url_pattern <- "URL:http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-rgx = '(?<=\\?v=|&v=)[\\w]+'
-
-
-ww <- str_extract_all(ss, rgx)
-
-ids = unname(sapply(ss, get_id))
-
-
-
-str_extract(string = x, pattern = perl("(?<=URL:).*(?=Description)"))
-
-data
-
-
-a <- "anything goes here, STR1 GET_ME STR2, anything goes here"
-res <- str_match(mw, "URL:(.*?)Description:")
-ss <- str_extract_all(string = mw, pattern = regex("(?<=URL:).*(?=Description:)"))
-
-
-
-
-
- rs<-c("copyright @ The Society of mo","I want you to meet me @ the coffeshop")
- s<-gsub(".*=","",imp_vec)
- s
-mw_test
+armored_comments <- list()
+for (jj in seq_along(armored_ids)) {  
+  logicked_comments[[jj]] <- get_all_comments2(logicked_ids[jj])
+  cat(jj)
+}
 ```
 
+# Amazing Atheist
+
+## Scraping
+
+- ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!
+- Test if 45 never works
+- Test if 9 never works (in the second sample of 221)
+
+```{r}
+
+amazingatheist_comments1 <- list()
+for (jj in seq_along(amazingatheist_ids)) {  
+  amazingatheist_comments1[[jj]] <- get_all_comments2(thunder_ids[jj])
+  cat(paste0("\t",jj))
+}
+
+amazingatheist_comments1 <- bind_rows(amazingatheist_comments1)
+
+save(amazingatheist_comments1, file = "data/amazingatheist_comments1.Rdata")
+
+```
+
+# Logicked
+
+## Scraping
+
+```{r}
+
+logicked_comments <- list()
+for (jj in seq_along(logicked_ids)) {  
+  logicked_comments[[jj]] <- get_all_comments2(logicked_ids[jj])
+  cat(jj)
+}
+
+logicked_comments1 <- list()
+logicked_ids1 <- logicked_ids[75:length(logicked_ids)]
+for (jj in seq_along(logicked_ids1)) {  
+  logicked_comments1[[jj]] <- get_all_comments2(logicked_ids1[jj])
+  cat(jj)
+}
+
+logicked_data1 <- bind_rows(logicked_comments)
+logicked_data2 <- bind_rows(logicked_comments1)
+
+logicked_comments <- rbind(logicked_data1, logicked_data2)
+
+#save(logicked_comments, file = "data/logicked_comments.Rdata")
+
+
+```
+
+
+
+# thunderfoot
+
+## Scraping
+
+```{r}
+thunder_comments <- list()
+for (jj in seq_along(thunder_ids)) {  
+  thunder_comments[[jj]] <- get_all_comments2(thunder_ids[jj])
+  cat(paste0("\t",jj))
+  BRRR::skrrrahh(jj)
+}
+
+thunder_comments1 <- bind_rows(thunder_comments)
+
+save(thunder_comments1, file = "data/thunder1.Rdata")
+
+thunder_ids1 <- thunder_ids[183:length(thunder_ids)]
+thunder_comments_1 <- list()
+for (jj in seq_along(thunder_ids)) {  
+  thunder_comments_1[[jj]] <- get_all_comments2(thunder_ids1[jj])
+  cat(paste0("\t",jj))
+  BRRR::skrrrahh(jj)
+}
+
+thunder_comments_2 <- bind_rows(thunder_comments_1)
+
+save(thunder_comments_2, file = "data/thunder2.Rdata")
+
+thunder_ids2 <- thunder_ids1[199:length(thunder_ids1)]
+thunder_comments_22 <- list()
+for (jj in seq_along(thunder_ids2)) {  
+  thunder_comments_22[[jj]] <- get_all_comments2(thunder_ids2[jj])
+  cat(paste0("\t",jj))
+  BRRR::skrrrahh(jj)
+}
+
+thunder_comments_3 <- bind_rows(thunder_comments_22)
+
+save(thunder_comments_3, file = "data/thunder3.Rdata")
+
+
+thunder_ids3 <- thunder_ids2[178:length(thunder_ids2)]
+thunder_comments_222 <- list()
+for (jj in seq_along(thunder_ids3)) {  
+  thunder_comments_222[[jj]] <- get_all_comments2(thunder_ids3[jj])
+  cat(paste0("\t",jj))
+  BRRR::skrrrahh(jj)
+}
+
+thunder_comments_4 <- bind_rows(thunder_comments_222)
+
+save(thunder_comments_4, file = "data/thunder4.Rdata")
+
+thunder_ids4 <- thunder_ids3[50:length(thunder_ids3)]
+thunder_comments_2222 <- list()
+for (jj in seq_along(thunder_ids4)) {  
+  thunder_comments_2222[[jj]] <- get_all_comments2(thunder_ids4[jj])
+  cat(paste0("\t",jj))
+  BRRR::skrrrahh(jj)
+}
+
+thunder_comments_5 <- bind_rows(thunder_comments_2222)
+
+save(thunder_comments_5, file = "data/thunder5.Rdata")
+
+thunder_ids5 <- thunder_ids4[94:length(thunder_ids4)]
+thunder_comments_22222 <- list()
+for (jj in seq_along(thunder_ids5)) {  
+  thunder_comments_22222[[jj]] <- get_all_comments2(thunder_ids5[jj])
+  cat(paste0("\t",jj))
+  BRRR::skrrrahh(jj)
+}
+
+thunder_comments_6 <- bind_rows(thunder_comments_22222)
+
+save(thunder_comments_6, file = "data/thunder6.Rdata")
+
+thunder_comments <- rbind(thunder_comments1, thunder_comments_2,
+                          thunder_comments_3, thunder_comments_4,
+                          thunder_comments_5, thunder_comments_6)
+
+save(thunder_comments, file = "data/thunder_comments.Rdata")
+
+```
+
+# get all comments
+
+```{r}
+get_all_comments2 <- function(video_id = NULL, ...) 
+{
+ 
+  yt_check_token <- function() {
+
+  app_token <- getOption("google_token")
+    if (is.null(app_token)) stop("Please get a token using yt_oauth().\n")
+
+  }
+  
+  tuber_GET <- function(path, query, ...) {
+
+  yt_check_token()
+
+  req <- GET("https://www.googleapis.com", path = paste0("youtube/v3/", path),
+                  query = query, config(token = getOption("google_token")), ...)
+  
+  tuber_check <- function(req) {
+
+  if (req$status_code < 400) return(invisible())
+
+  stop("HTTP failure: ", req$status_code, "\n", call. = FALSE)
+  }
+
+  tuber_check(req)
+  res <- content(req)
+
+  res
+  }
+  
+  
+  
+   querylist <- list(videoId = video_id, part = "id,replies,snippet", 
+    maxResults = 100)
+  res <- tuber_GET("commentThreads", querylist, ...)
+  simple_res <- lapply(res$items, function(x) {
+    unlist(x$snippet$topLevelComment$snippet)
+  })
+  simpler_res <- ldply(simple_res, rbind)
+  simpler_res$parentId <- NA
+  n_replies <- sapply(res$items, function(x) {
+    unlist(x$snippet$totalReplyCount)
+  })
+  if (sum(n_replies) > 1) {
+    replies <- lapply(res$items[n_replies > 0], function(x) {
+      unlist(x$replies$comments)
+    })
+    simpler_rep <- ldply(replies, rbind)
+    names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
+    simpler_rep <- subset(simpler_rep, select = -c(kind, 
+      etag, id))
+    agg_res <- plyr::rbind.fill(simpler_res, simpler_rep)
+  }
+  agg_res <- simpler_res
+  page_token <- res$nextPageToken
+  while (is.character(page_token)) {
+    querylist$pageToken <- page_token
+    a_res <- tuber_GET("commentThreads", querylist, ...)
+    simple_res <- lapply(a_res$items, function(x) {
+      unlist(x$snippet$topLevelComment$snippet)
+    })
+    simpler_res <- ldply(simple_res, rbind)
+    simpler_res$parentId <- NA
+    n_replies <- sapply(a_res$items, function(x) {
+      unlist(x$snippet$totalReplyCount)
+    })
+    if (sum(n_replies) > 1) {
+      replies <- lapply(a_res$items[n_replies > 0], function(x) {
+        unlist(x$replies$comments)
+      })
+      simpler_rep <- ldply(replies, rbind)
+      names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
+      simpler_rep <- subset(simpler_rep, select = -c(kind, 
+        etag, id))
+      agg_res <- plyr::rbind.fill(simpler_res, simpler_rep, agg_res)
+      page_token <- a_res$nextPageToken
+    }
+    agg_res <- plyr::rbind.fill(simpler_res, agg_res)
+    page_token <- a_res$nextPageToken
+  }
+  agg_res
+}
+
+```

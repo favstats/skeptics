@@ -25,6 +25,8 @@ tuber::yt_oauth(client_id, client_key)
 
 ```
 
+
+
 # Video Details
 
 Hier gibt es zum Beispiel:
@@ -37,10 +39,6 @@ Hier gibt es zum Beispiel:
 
 #amazingatheist_details <- purrr::map(amazingatheist_ids, get_video_details)
 #save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
-
-load("data/amazingatheist_details.Rdata")
-
-video_ids <- armored_ids
 
 extract_details <- function(video_ids) {
   video_ids_details <- purrr::map(video_ids, get_video_details)
@@ -89,7 +87,7 @@ details <- tibble(channel, id, date, titles, tags)
 print("6) Extracting Video Statistics")
 
 
-stats <- map_df(armored_ids, get_stats) %>% 
+stats <- map_df(video_ids, get_stats) %>% 
   mutate_at(vars(viewCount, likeCount, 
                  dislikeCount, favoriteCount,
                  commentCount),
@@ -101,18 +99,30 @@ print("Done!")
 return(details)
 }
 
-armored_details <- extract_details(armored_ids)
-logicked_details <- extract_details(logicked_ids) #was is mit den details los
+# armored_details <- extract_details(armored_ids)
+# amazingatheist_details <- extract_details(amazingatheist_ids)
+# logicked_details <- extract_details(logicked_ids) 
+# thunder_details <- extract_details(thunder_ids)
 
-#save(armored_details, file = "data/armored_details.Rdata")
-load("data/armored_details.Rdata")
+# save(armored_details, file = "data/armored_details.Rdata")
+# save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
+# save(logicked_details, file = "data/logicked_details.Rdata")
+# save(thunder_details, file = "data/thunder_details.Rdata")
 
-amazingatheist_details[[1]]
+
 ```
 
+## load details
+
+```{r}
+load("data/armored_details.Rdata")
+load("data/amazingatheist_details.Rdata")
+load("data/logicked_details.Rdata")
+load("data/thunder_details.Rdata")
+```
+
+
 # Comments
-
-
 
 ## Armored Skeptic
 
@@ -193,33 +203,6 @@ armored_comments %>%
 
 ## Logicked
 
-### Scraping
-
-```{r}
-
-logicked_comments <- list()
-for (jj in seq_along(logicked_ids)) {  
-  logicked_comments[[jj]] <- get_all_comments2(logicked_ids[jj])
-  cat(jj)
-}
-
-logicked_comments1 <- list()
-logicked_ids1 <- logicked_ids[75:length(logicked_ids)]
-for (jj in seq_along(logicked_ids1)) {  
-  logicked_comments1[[jj]] <- get_all_comments2(logicked_ids1[jj])
-  cat(jj)
-}
-
-logicked_data1 <- bind_rows(logicked_comments)
-logicked_data2 <- bind_rows(logicked_comments1)
-
-logicked_comments <- rbind(logicked_data1, logicked_data2)
-
-#save(logicked_comments, file = "data/logicked_comments.Rdata")
-
-
-```
-
 ### Comments
 
 ```{r}
@@ -248,54 +231,52 @@ ggsave(r_vs_sjw_logicked, file = "r_vs_sjw_logicked.png", width = 7, height = 5)
 
 ## Amazing Atheist
 
-- ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!
-- Test if 45 never works
-- Test if 9 never works (in the second sample of 221)
+### Comments
 
 ```{r}
 
-amazingatheist_ids <- amazingatheist_ids[221:length(amazingatheist_ids)]
-amazingatheist_comments <- list()
-for (jj in seq_along(amazingatheist_ids)) {  
-    tryCatch({
-amazingatheist_comments[[jj]] <- get_all_comments(amazingatheist_ids[jj])
-    }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-  cat(jj)
-}
-save(amazingatheist_comments, file = "data/amazingatheist_comments1.Rdata")
-
-aa_data <- bind_rows(amazingatheist_comments)
-save(aa_data, file = "data/aa_data.Rdata")
-
-unique(aa_data$videoId)
 ```
+
 
 ## thunderfoot
 
-### Scraping
+### Comments
 
 ```{r}
-thunder_comments <- list()
-for (jj in seq_along(thunder_ids)) {  
-  thunder_comments[[jj]] <- get_all_comments2(thunder_ids[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
+
+load("data/thunder_comments.Rdata")
+
+gg_thunder <- plot_data(thunder_comments, thunder_details)
 
 
+r_vs_sjw_thunder <- gg_thunder %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+#  geom_step() +
+  geom_smooth() +
+  guides(size = F, alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Mentions of 'Religion' and 'SJW' in thunderf00t's Comments") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video")
+
+ggsave(r_vs_sjw_thunder, file = "r_vs_sjw_thunder.png", width = 7, height = 5)
 
 ```
-
 
 ## All together
 
 ```{r}
 gg_all <- rbind(plot_data(armored_comments, armored_details),
-                 plot_data(logicked_comments, logicked_details))
+                 plot_data(logicked_comments, logicked_details),
+                plot_data(thunder_comments, thunder_details))
 
-r_vs_sjw_all <- gg_all %>% 
+r_vs_sjw_all <- gg_all %>%
+# filter(date >= as.Date("2012-01-01")) %>% 
+  filter(channel != "Logicked") %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
-  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+#  geom_point(aes(size = comment_prop, alpha = 0.2)) +
   geom_smooth() +
   guides(size = F, alpha = F) +
   theme_gdocs() +
@@ -586,93 +567,7 @@ UCLfhh63n0fWn0gXXKQ5NWvw
 
 "http://youtube.com/watch?
 
-# get all comments
 
-```{r}
-get_all_comments2 <- function(video_id = NULL, ...) 
-{
- 
-  yt_check_token <- function() {
-
-  app_token <- getOption("google_token")
-    if (is.null(app_token)) stop("Please get a token using yt_oauth().\n")
-
-  }
-  
-  tuber_GET <- function(path, query, ...) {
-
-  yt_check_token()
-
-  req <- GET("https://www.googleapis.com", path = paste0("youtube/v3/", path),
-                  query = query, config(token = getOption("google_token")), ...)
-  
-  tuber_check <- function(req) {
-
-  if (req$status_code < 400) return(invisible())
-
-  stop("HTTP failure: ", req$status_code, "\n", call. = FALSE)
-  }
-
-  tuber_check(req)
-  res <- content(req)
-
-  res
-  }
-  
-  
-  
-   querylist <- list(videoId = video_id, part = "id,replies,snippet", 
-    maxResults = 100)
-  res <- tuber_GET("commentThreads", querylist, ...)
-  simple_res <- lapply(res$items, function(x) {
-    unlist(x$snippet$topLevelComment$snippet)
-  })
-  simpler_res <- ldply(simple_res, rbind)
-  simpler_res$parentId <- NA
-  n_replies <- sapply(res$items, function(x) {
-    unlist(x$snippet$totalReplyCount)
-  })
-  if (sum(n_replies) > 1) {
-    replies <- lapply(res$items[n_replies > 0], function(x) {
-      unlist(x$replies$comments)
-    })
-    simpler_rep <- ldply(replies, rbind)
-    names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
-    simpler_rep <- subset(simpler_rep, select = -c(kind, 
-      etag, id))
-    agg_res <- plyr::rbind.fill(simpler_res, simpler_rep)
-  }
-  agg_res <- simpler_res
-  page_token <- res$nextPageToken
-  while (is.character(page_token)) {
-    querylist$pageToken <- page_token
-    a_res <- tuber_GET("commentThreads", querylist, ...)
-    simple_res <- lapply(a_res$items, function(x) {
-      unlist(x$snippet$topLevelComment$snippet)
-    })
-    simpler_res <- ldply(simple_res, rbind)
-    simpler_res$parentId <- NA
-    n_replies <- sapply(a_res$items, function(x) {
-      unlist(x$snippet$totalReplyCount)
-    })
-    if (sum(n_replies) > 1) {
-      replies <- lapply(a_res$items[n_replies > 0], function(x) {
-        unlist(x$replies$comments)
-      })
-      simpler_rep <- ldply(replies, rbind)
-      names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
-      simpler_rep <- subset(simpler_rep, select = -c(kind, 
-        etag, id))
-      agg_res <- plyr::rbind.fill(simpler_res, simpler_rep, agg_res)
-      page_token <- a_res$nextPageToken
-    }
-    agg_res <- plyr::rbind.fill(simpler_res, agg_res)
-    page_token <- a_res$nextPageToken
-  }
-  agg_res
-}
-
-```
 
 # plot function
 
@@ -762,27 +657,31 @@ ss <- c(ss,"nix", ss)
 devtools::install_github("brooke-watson/BRRR")
 library(BRRR)
 
+
+
 thunder_comments <- list()
-for (jj in seq_along(thunder_ids)) { 
+for (jj in seq_along(ss)) { 
     while (TRUE) {
        df <- try(  
-         thunder_comments[[jj]] <- get_all_comments2(thunder_ids[jj]), 
+         thunder_comments[[jj]] <- get_all_comments2(ss[jj]), 
   silent = F)
        cat(paste0("\t",jj))
        BRRR::skrrrahh(jj)
        if (!is(df, 'try-error')) break
-       if (str_detect(df, "HTTP failure: 401")) stop("Was hier loooos")
+       if (str_detect(df, "HTTP failure: ")) stop("Was hier loooos")
     }
-  ff <- list()
-    ff[ff] <- df
+  ff <- bind_rows(df) 
+
 }
 
 
 bind_rows(ff)
-
+unique(ff$videoId)
 class(df)
 
 str_detect(df, "HTTP failure: 404")
+
+
 
 ```
 
