@@ -8,6 +8,9 @@ pacman::p_load(tidyverse, magrittr, stringi, qdapRegex, purrr)
 
 amazingatheist <- read_file("amazingatheist.txt")
 armored <- read_file("armored.txt")
+logicked <- read_file("logicked.txt")
+thunder <- read_file("thunder.txt")
+
 
 ```
 
@@ -30,9 +33,15 @@ return(imp_vec)
 
 amazingatheist_ids <- extract_video_ids(amazingatheist)
 armored_ids <- extract_video_ids(armored)
+logicked_ids <- extract_video_ids(logicked)
+thunder_ids <- extract_video_ids(thunder)
+
 
 head(amazingatheist_ids)
 head(armored_ids)
+head(logicked_ids)
+head(thunder_ids)
+
 ```
 
 # Trash
