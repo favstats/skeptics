@@ -34,6 +34,7 @@ logicked <- read_file("logicked.txt")
 thunder <- read_file("thunder.txt")
 sargon <- read_file("sargon.txt")
 
+
 ```
 
 # Extract URLs
@@ -84,8 +85,10 @@ authentication <- function() {
   tuber::yt_oauth(client_id, client_key)
 }
 
+authentication()
 
-extract_comments <- function(ids, n, youtuber) {
+
+extract_comments <- function(ids, n, youtube) {
   comments <- list()
   for (jj in n:length(ids)) {
     outcome <- tryCatch({
@@ -103,8 +106,8 @@ extract_comments <- function(ids, n, youtuber) {
       message("\n YouTube Authentication needed")
       authentication()
       save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
-      Sys.sleep(300)
-      if (file.exists(auth_token)) {
+      Sys.sleep(300)                
+      if (file.exists(auth_token)) {  # IS ALWAYS TRUE NEEDS FIXING
         comments[[jj]] <- get_all_comments2(ids[jj])
       } else {
          return(comments)
@@ -112,8 +115,8 @@ extract_comments <- function(ids, n, youtuber) {
     } else if (str_detect(outcome$message, "400")) {
       cat("\n", outcome$message)
       cat("\n Encountered problem at iteration ", jj)
-      Sys.sleep(10)
       cat("\n Waiting for 10 seconds.. then try again\n")
+      Sys.sleep(10)
       comments[[jj]] <- get_all_comments2(ids[jj])
     } else if (str_detect(outcome$message, "403")) {
       cat("\n", outcome$message)
@@ -149,9 +152,6 @@ for (jj in seq_along(armored_ids)) {
 
 ## Scraping
 
-
-## Main
-
 ```{r}
 
 ## Try 1
@@ -161,8 +161,15 @@ amazingatheist_comments1 <- extract_comments(amazingatheist_ids, 1, "amazingathe
 
 amazingatheist_comments2 <- extract_comments(amazingatheist_ids, 934, "amazingatheist")
 
+amazingatheist_comments <- rbind(
+  get(load("data/amazingatheist_comments_1_238.Rdata")),
+  get(load("data/amazingatheist_comments_1_470.Rdata")),
+  get(load("data/amazingatheist_comments_1_748.Rdata")),
+  get(load("data/amazingatheist_comments_1_848.Rdata")),
+  get(load("data/amazingatheist_comments_1_934.Rdata"))
+)
 
-
+amazingatheist_comments <- supresswarni(bind_rows(amazingatheist_comments))
 ```
 
 # Logicked
