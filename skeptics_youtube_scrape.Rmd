@@ -8,7 +8,7 @@ output: html_notebook
 ```{r}
 #devtools::install_github("soodoku/tuber")
 
-pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr)
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, trycatchthis)
 
 ```
 
@@ -66,6 +66,73 @@ head(thunder_ids)
 
 ```
 
+# Scraper Function
+
+```{r}
+
+# ids <- c(amazingatheist_ids[1:2], "ss", amazingatheist_ids[3])
+
+authentication <- function() {
+  beepr::beep(5)
+  auth_token <- ".httr-oauth"
+  if (file.exists(auth_token)) file.remove(auth_token)
+
+  client_id <- "580511698053-p8mu77kktkcvb503g9q737svu9gcq101.apps.googleusercontent.com"
+
+  client_key <- "Y0eW96yy-WRg90RZjVJS615o"
+
+  tuber::yt_oauth(client_id, client_key)
+}
+
+
+extract_comments <- function(ids, n, youtuber) {
+  comments <- list()
+  for (jj in n:length(ids)) {
+    outcome <- tryCatch({
+      get_all_comments2(ids[jj])
+    }, 
+    error = function(e){
+      e
+    })
+    if (is.data.frame(outcome)) {
+      comments[[jj]] <- outcome
+    } else if (str_detect(outcome$message, "401")) {
+      #outcome <- NA
+      cat("Loop stopped on iteration ", jj)
+      cat("\n", outcome$message)
+      message("\n YouTube Authentication needed")
+      authentication()
+      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
+      Sys.sleep(300)
+      if (file.exists(auth_token)) {
+        comments[[jj]] <- get_all_comments2(ids[jj])
+      } else {
+         return(comments)
+      }
+    } else if (str_detect(outcome$message, "400")) {
+      cat("\n", outcome$message)
+      cat("\n Encountered problem at iteration ", jj)
+      Sys.sleep(10)
+      cat("\n Waiting for 10 seconds.. then try again\n")
+      comments[[jj]] <- get_all_comments2(ids[jj])
+    } else if (str_detect(outcome$message, "403")) {
+      cat("\n", outcome$message)
+      cat("\n Encountered problem at iteration ", jj)
+      Sys.sleep(10)
+      cat("\n Skipping", jj, "\n")
+      next
+    }
+    cat(paste0("\t", jj)) 
+  }
+  if (jj == length(ids)) beepr::beep(8)
+  save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
+  return(comments)
+}
+
+```
+
+
+
 # Armored Skeptic
 
 ## Scraping
@@ -82,65 +149,17 @@ for (jj in seq_along(armored_ids)) {
 
 ## Scraping
 
-- ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!
-- Test if 45 never works
-- Test if 9 never works (in the second sample of 221)
+
+## Main
 
 ```{r}
 
-# extract function
-extract_comments <- function(ids) {
-  comments <- list()
-for (jj in seq_along(ids)) {  
-  try(comments[[jj]] <- get_all_comments2(ids[jj]))
-  cat(paste0("\t",jj))
-  }
-  comments <- suppressWarnings( bind_rows(comments) )
-  message(paste("\n\nIteration stopped at:", jj))
-  return(comments)
-}
+## Try 1
+amazingatheist_comments1 <- extract_comments(amazingatheist_ids, 1, "amazingatheist")
 
-# Error : HTTP failure: 401 <- AUTH ERROR
+## Try 2
 
-# Error : HTTP failure: 400 <- nonproblematic
-# Error : HTTP failure: 403 <- nonproblematic
-
-# Try 1
-# missed
-c(44, 60, 61, 62, 73, 74, 88) # 7
-amazingatheist_comments1 <- extract_comments(amazingatheist_ids)
-
-count(unique(amazingatheist_comments1$videoId))
-
-save(amazingatheist_comments1, file = "data/amazingatheist_comments1.Rdata")
-
-# Try 2
- 
-amazingatheist_ids1 <- amazingatheist_ids[145:length(amazingatheist_ids)]
-amazingatheist_comments2 <-  extract_comments(amazingatheist_ids1)
-
-save(amazingatheist_comments2, file = "data/amazingatheist_comments2.Rdata")
-
-# Try 3
-
-amazingatheist_ids3 <- amazingatheist_ids1[jj:length(amazingatheist_ids1)]
-amazingatheist_comments3 <-  extract_comments(amazingatheist_ids3)
-
-save(amazingatheist_comments3, file = "data/amazingatheist_comments3.Rdata")
-
-
-
-
-# old
- 
-amazingatheist_comments1 <- list()
-for (jj in seq_along(amazingatheist_ids)) {  
-  amazingatheist_comments1[[jj]] <- get_all_comments2(amazingatheist_ids[jj])
-  cat(paste0("\t",jj))
-}
-
-
-save(amazingatheist_comments2, file = "data/amazingatheist_comments2.Rdata")
+amazingatheist_comments2 <- extract_comments(amazingatheist_ids, 934, "amazingatheist")
 
 
 
@@ -345,7 +364,169 @@ get_all_comments2 <- function(video_id = NULL, ...)
     agg_res <- plyr::rbind.fill(simpler_res, agg_res)
     page_token <- a_res$nextPageToken
   }
-  agg_res
+  agg_res %>% 
+    as.data.frame()
+  
 }
 
+```
+
+# old scraper
+
+- ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!
+- Test if 45 never works
+- Test if 9 never works (in the second sample of 221)
+
+
+```{r}
+
+# extract function
+extract_comments <- function(ids) {
+  comments <- list()
+  for (jj in seq_along(ids)) {
+    comments[[jj]] <- get_all_comments2(ids[jj])
+    cat(paste0("\t", jj))
+  }
+  comments <- suppressWarnings(bind_rows(comments))
+  message(paste("\n\nIteration stopped at:", jj))
+  return(comments)
+}
+
+ww <- c(amazingatheist_ids[1:2], "ss", amazingatheist_ids[1:3])
+
+try_catch(extract_comments(ww), 
+          .e = ~ paste0("There is an error: ", .x), 
+          .w = ~ paste0("This is a warning: ", .x))
+
+
+
+# Error : HTTP failure: 401 <- AUTH ERROR
+
+# Error : HTTP failure: 400 <- nonproblematic
+# Error : HTTP failure: 403 <- nonproblematic
+
+# Try 1
+# missed
+c(44, 60, 61, 62, 73, 74, 88) # 7
+amazingatheist_comments1 <- extract_comments(amazingatheist_ids)
+
+count(unique(amazingatheist_comments1$videoId))
+
+save(amazingatheist_comments1, file = "data/amazingatheist_comments1.Rdata")
+
+# Try 2
+ 
+amazingatheist_ids1 <- amazingatheist_ids[145:length(amazingatheist_ids)]
+amazingatheist_comments2 <-  extract_comments(amazingatheist_ids1)
+
+save(amazingatheist_comments2, file = "data/amazingatheist_comments2.Rdata")
+
+# Try 3
+
+amazingatheist_ids3 <- amazingatheist_ids1[jj:length(amazingatheist_ids1)]
+amazingatheist_comments3 <-  extract_comments(amazingatheist_ids3)
+
+save(amazingatheist_comments3, file = "data/amazingatheist_comments3.Rdata")
+
+
+
+
+# old
+ 
+amazingatheist_comments1 <- list()
+for (jj in seq_along(amazingatheist_ids)) {  
+  amazingatheist_comments1[[jj]] <- get_all_comments2(amazingatheist_ids[jj])
+  cat(paste0("\t",jj))
+}
+
+
+save(amazingatheist_comments2, file = "data/amazingatheist_comments2.Rdata")
+
+extract_comments <- function(ids) {
+  comments <- list()
+for (jj in seq_along(ids)) {  
+  comments[[jj]] <- get_all_comments2(ids[jj])
+  cat(paste0("\t",jj))
+  }
+  comments <- suppressWarnings( bind_rows(comments) )
+  message(paste("\n\nIteration stopped at:", jj))
+  return(comment)
+}
+
+ww <- c(amazingatheist_ids[1:2], "ss", amazingatheist_ids[1:3])
+extract_comments(ww)
+
+try_catch(lol <- extract_comments(ww), 
+          .e = function(e){
+            print(paste0("There is an error: ", e))
+            print("Ok, let's save this")
+            save(lol, "lol.Rdata") # commented to prevent from log.txt creation on your machine
+            print(paste("log saved on log.txt at", time))
+            print("let's move on now")
+          })
+
+x <- "HTTP sdg"
+s <- str_detect(x, "HTTP")
+# Stop if .x is numeric
+b  <- 20
+# Warn if .x is not equal to 10
+warn_if_not(.x = x, 
+        .p = ~ str_detect(.x, "fllap") , 
+        msg = "b should be 10")
+
+warn_if(.x = x, 
+        .p = ~ str_detect(.x, "HTTP"), 
+        msg = "b should be 10")
+
+try_catch(fluuur <- extract_comments(ww), 
+          .e = ~ warn_if(.x = .x, 
+               .p = ~ if (str_detect(.x, "HTTP failure: 404")) save(fluuur, "fluuur.Rdat"), 
+               msg = "I did it!"))
+
+ids <- c("1", "3", "7", "9")
+
+errors <- c("Error: Try Again", "Error: Stop for Loop")
+
+  numbers <- list()
+for (jj in seq_along(ids)) {  
+  numbers[[jj]] <- as.numeric(ids[jj])
+  if (jj == sample(1:4, 1)) stop(sample(errors, 1))
+  }
+
+numbers
+
+  numbers <- list()
+for (jj in seq_along(ids)) {  
+  numbers[[jj]] <- as.numeric(ids[jj])
+  }
+  
+  numbers
+  
+  safely <- function(fn, ..., max_attempts = 5) {
+  function(...) {
+    this_env <- environment()
+    for(i in seq_len(max_attempts)) {
+      ok <- tryCatch({
+          assign("result", fn(...), envir = this_env)
+          TRUE
+        },
+        error = function(e) {
+          FALSE
+        }
+      )
+      if(ok) {
+        return(this_env$result)
+      }
+    }
+    msg <- sprintf(
+      "%s failed after %d tries; returning NULL.",
+      deparse(match.call()),
+      max_attempts
+    )
+    warning(msg)
+    NULL
+  }
+  }
+  
+  
 ```
