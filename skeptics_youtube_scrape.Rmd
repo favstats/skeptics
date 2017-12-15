@@ -8,7 +8,7 @@ output: html_notebook
 ```{r}
 #devtools::install_github("soodoku/tuber")
 
-pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, trycatchthis)
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc)
 
 ```
 
@@ -59,22 +59,117 @@ armored_ids <- extract_video_ids(armored)
 amazingatheist_ids <- extract_video_ids(amazingatheist)
 logicked_ids <- extract_video_ids(logicked)
 thunder_ids <- extract_video_ids(thunder)
+sargon_ids <- extract_video_ids(sargon)
 
 head(armored_ids)
 head(amazingatheist_ids)
 head(logicked_ids)
 head(thunder_ids)
+head(sargon_ids)
 
 ```
+# GetAllComments
+
+```{r}
+get_all_comments2 <- function(video_id = NULL, ...) {
+  yt_check_token <- function() {
+    app_token <- getOption("google_token")
+    if (is.null(app_token)) stop("Please get a token using yt_oauth().\n")
+  }
+
+  tuber_GET <- function(path, query, ...) {
+    yt_check_token()
+
+    req <- GET(
+      "https://www.googleapis.com", path = paste0("youtube/v3/", path),
+      query = query, config(token = getOption("google_token")), ...
+    )
+
+    tuber_check <- function(req) {
+      if (req$status_code < 400) return(invisible())
+
+      stop("HTTP failure: ", req$status_code, "\n", call. = FALSE)
+    }
+
+    tuber_check(req)
+    res <- content(req)
+
+    res
+  }
+
+  querylist <- list(
+    videoId = video_id, part = "id,replies,snippet",
+    maxResults = 100
+  )
+  res <- tuber_GET("commentThreads", querylist, ...)
+  simple_res <- lapply(res$items, function(x) {
+    unlist(x$snippet$topLevelComment$snippet)
+  })
+  simpler_res <- ldply(simple_res, rbind)
+  simpler_res$parentId <- NA
+  n_replies <- sapply(res$items, function(x) {
+    unlist(x$snippet$totalReplyCount)
+  })
+  if (sum(n_replies) > 1) {
+    replies <- lapply(res$items[n_replies > 0], function(x) {
+      unlist(x$replies$comments)
+    })
+    simpler_rep <- ldply(replies, rbind)
+    names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
+    simpler_rep <- subset(simpler_rep, select = -c(
+      kind,
+      etag, id
+    ))
+    agg_res <- plyr::rbind.fill(simpler_res, simpler_rep)
+  }
+  agg_res <- simpler_res
+  page_token <- res$nextPageToken
+  while (is.character(page_token)) {
+    querylist$pageToken <- page_token
+    a_res <- tuber_GET("commentThreads", querylist, ...)
+    simple_res <- lapply(a_res$items, function(x) {
+      unlist(x$snippet$topLevelComment$snippet)
+    })
+    simpler_res <- ldply(simple_res, rbind)
+    simpler_res$parentId <- NA
+    n_replies <- sapply(a_res$items, function(x) {
+      unlist(x$snippet$totalReplyCount)
+    })
+    if (sum(n_replies) > 1) {
+      replies <- lapply(a_res$items[n_replies > 0], function(x) {
+        unlist(x$replies$comments)
+      })
+      simpler_rep <- ldply(replies, rbind)
+      names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
+      simpler_rep <- subset(simpler_rep, select = -c(
+        kind,
+        etag, id
+      ))
+      agg_res <- plyr::rbind.fill(simpler_res, simpler_rep, agg_res)
+      page_token <- a_res$nextPageToken
+    }
+    agg_res <- plyr::rbind.fill(simpler_res, agg_res)
+    page_token <- a_res$nextPageToken
+  }
+  agg_res %>%
+    as.data.frame()
+}
+
+```
+
 
 # Scraper Function
 
 ```{r}
 
 # ids <- c(amazingatheist_ids[1:2], "ss", amazingatheist_ids[3])
+readkey <- function() {
+    line <- readline(prompt = "Are you there? Press [enter]")
+}
 
 authentication <- function() {
   beepr::beep(5)
+  readkey()
   auth_token <- ".httr-oauth"
   if (file.exists(auth_token)) file.remove(auth_token)
 
@@ -85,40 +180,45 @@ authentication <- function() {
   tuber::yt_oauth(client_id, client_key)
 }
 
-authentication()
 
-
-extract_comments <- function(ids, n, youtube) {
+extract_comments <- function(ids, n, youtuber) {
   comments <- list()
+  cat("Starting loop. Sit back and get a tea. This might take a while...  ( ͡° ͜ʖ ͡°)\n")
   for (jj in n:length(ids)) {
+#    svMisc::progress(jj)
     outcome <- tryCatch({
       get_all_comments2(ids[jj])
     }, 
     error = function(e){
       e
     })
-    if (is.data.frame(outcome)) {
+    if (is.data.frame(outcome)) { #Not sure what this does
       comments[[jj]] <- outcome
-    } else if (str_detect(outcome$message, "401")) {
-      #outcome <- NA
-      cat("Loop stopped on iteration ", jj)
+    } else if (str_detect(outcome$message, "401")) { #if Error Message include 401
+      cat("\n Loop stopped on iteration ", jj)
       cat("\n", outcome$message)
-      message("\n YouTube Authentication needed")
+      message("\n YouTube Authentication needed!")
+      cat("\n Saving data for safety...")
+      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))     
+      cat("\t Done! \n")
       authentication()
-      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
-      Sys.sleep(300)                
-      if (file.exists(auth_token)) {  # IS ALWAYS TRUE NEEDS FIXING
-        comments[[jj]] <- get_all_comments2(ids[jj])
-      } else {
-         return(comments)
-      }
-    } else if (str_detect(outcome$message, "400")) {
+      cat("\n Waiting for 10 seconds...")
+      Sys.sleep(10)                
+      cat("\t Done! \n Continuing...")
+      comments[[jj]] <- get_all_comments2(ids[jj])
+    } else if (str_detect(outcome$message, "400")) { #if Error Message include 400
       cat("\n", outcome$message)
       cat("\n Encountered problem at iteration ", jj)
-      cat("\n Waiting for 10 seconds.. then try again\n")
-      Sys.sleep(10)
+      cat("\n Saving data for safety...")
+      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))     
+      cat("\t Done!")
+      cat("\n Waiting for 20 seconds and..")
+      Sys.sleep(20)
+      cat("\t trying again\n")
       comments[[jj]] <- get_all_comments2(ids[jj])
-    } else if (str_detect(outcome$message, "403")) {
+      cat("\n Puuh... this worked. Deleting file.\n")
+      file.remove(paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
+    } else if (str_detect(outcome$message, "403")) { #if Error Message include 403
       cat("\n", outcome$message)
       cat("\n Encountered problem at iteration ", jj)
       Sys.sleep(10)
@@ -126,9 +226,15 @@ extract_comments <- function(ids, n, youtube) {
       next
     }
     cat(paste0("\t", jj)) 
-  }
-  if (jj == length(ids)) beepr::beep(8)
+  }   # End of the for loop
+  cat("\n Binding rows. Might take while.. \t")
+  comments <- suppressWarnings(bind_rows(comments))
+  cat("Done!\n ")
+  cat("\n Saving data one last time...")
   save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
+  cat("\t Done!\n")
+  if (jj == length(ids)) beepr::beep(8)
+  cat(paste("\n Congratulations! You just succesfully mined", nrow(comments), "comments from", jj, "YouTube Videos"))
   return(comments)
 }
 
@@ -162,14 +268,15 @@ amazingatheist_comments1 <- extract_comments(amazingatheist_ids, 1, "amazingathe
 amazingatheist_comments2 <- extract_comments(amazingatheist_ids, 934, "amazingatheist")
 
 amazingatheist_comments <- rbind(
-  get(load("data/amazingatheist_comments_1_238.Rdata")),
-  get(load("data/amazingatheist_comments_1_470.Rdata")),
-  get(load("data/amazingatheist_comments_1_748.Rdata")),
-  get(load("data/amazingatheist_comments_1_848.Rdata")),
-  get(load("data/amazingatheist_comments_1_934.Rdata"))
+  suppressWarnings(bind_rows(get(load("data/amazingatheist_comments_1_238.Rdata")))),
+  suppressWarnings(bind_rows(get(load("data/amazingatheist_comments_1_470.Rdata")))),
+  suppressWarnings(bind_rows(get(load("data/amazingatheist_comments_1_748.Rdata")))),
+  suppressWarnings(bind_rows(get(load("data/amazingatheist_comments_1_848.Rdata")))),
+  suppressWarnings(bind_rows(get(load("data/amazingatheist_comments_1_934.Rdata")))),
+  suppressWarnings(bind_rows(get(load("data/amazingatheist_comments_934_1448.Rdata"))))
 )
 
-amazingatheist_comments <- supresswarni(bind_rows(amazingatheist_comments))
+save(amazingatheist_comments, file = "data/amazingatheist_comments.Rdata")
 ```
 
 # Logicked
@@ -288,96 +395,18 @@ save(thunder_comments, file = "data/thunder_comments.Rdata")
 
 ```
 
-# get all comments
+# Sargon of Akkad
+
+## Scraping
 
 ```{r}
-get_all_comments2 <- function(video_id = NULL, ...) 
-{
- 
-  yt_check_token <- function() {
 
-  app_token <- getOption("google_token")
-    if (is.null(app_token)) stop("Please get a token using yt_oauth().\n")
+## Try 1
+sargon_comments1 <- extract_comments(sargon_ids, 1, "sargon")
 
-  }
-  
-  tuber_GET <- function(path, query, ...) {
-
-  yt_check_token()
-
-  req <- GET("https://www.googleapis.com", path = paste0("youtube/v3/", path),
-                  query = query, config(token = getOption("google_token")), ...)
-  
-  tuber_check <- function(req) {
-
-  if (req$status_code < 400) return(invisible())
-
-  stop("HTTP failure: ", req$status_code, "\n", call. = FALSE)
-  }
-
-  tuber_check(req)
-  res <- content(req)
-
-  res
-  }
-  
-  
-  
-   querylist <- list(videoId = video_id, part = "id,replies,snippet", 
-    maxResults = 100)
-  res <- tuber_GET("commentThreads", querylist, ...)
-  simple_res <- lapply(res$items, function(x) {
-    unlist(x$snippet$topLevelComment$snippet)
-  })
-  simpler_res <- ldply(simple_res, rbind)
-  simpler_res$parentId <- NA
-  n_replies <- sapply(res$items, function(x) {
-    unlist(x$snippet$totalReplyCount)
-  })
-  if (sum(n_replies) > 1) {
-    replies <- lapply(res$items[n_replies > 0], function(x) {
-      unlist(x$replies$comments)
-    })
-    simpler_rep <- ldply(replies, rbind)
-    names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
-    simpler_rep <- subset(simpler_rep, select = -c(kind, 
-      etag, id))
-    agg_res <- plyr::rbind.fill(simpler_res, simpler_rep)
-  }
-  agg_res <- simpler_res
-  page_token <- res$nextPageToken
-  while (is.character(page_token)) {
-    querylist$pageToken <- page_token
-    a_res <- tuber_GET("commentThreads", querylist, ...)
-    simple_res <- lapply(a_res$items, function(x) {
-      unlist(x$snippet$topLevelComment$snippet)
-    })
-    simpler_res <- ldply(simple_res, rbind)
-    simpler_res$parentId <- NA
-    n_replies <- sapply(a_res$items, function(x) {
-      unlist(x$snippet$totalReplyCount)
-    })
-    if (sum(n_replies) > 1) {
-      replies <- lapply(a_res$items[n_replies > 0], function(x) {
-        unlist(x$replies$comments)
-      })
-      simpler_rep <- ldply(replies, rbind)
-      names(simpler_rep) <- gsub("snippet.", "", names(simpler_rep))
-      simpler_rep <- subset(simpler_rep, select = -c(kind, 
-        etag, id))
-      agg_res <- plyr::rbind.fill(simpler_res, simpler_rep, agg_res)
-      page_token <- a_res$nextPageToken
-    }
-    agg_res <- plyr::rbind.fill(simpler_res, agg_res)
-    page_token <- a_res$nextPageToken
-  }
-  agg_res %>% 
-    as.data.frame()
-  
-}
+sargon_comments <- sargon_comments1
 
 ```
-
 # old scraper
 
 - ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!

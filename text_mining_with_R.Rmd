@@ -1,0 +1,25 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc)
+
+
+amazingatheist_comments <- rbind(
+  get(load("data/amazingatheist_comments_1_238.Rdata")),
+  get(load("data/amazingatheist_comments_1_470.Rdata")),
+  get(load("data/amazingatheist_comments_1_748.Rdata")),
+  get(load("data/amazingatheist_comments_1_848.Rdata")),
+  get(load("data/amazingatheist_comments_1_934.Rdata")),
+  get(load("data/amazingatheist_comments_934_1448.Rdata"))  
+)
+
+amazingatheist_comments <- suppressWarnings(bind_rows(amazingatheist_comments))
+
+save(amazingatheist_comments, file ="amazingatheist_comments.Rdata")
+```
+
+

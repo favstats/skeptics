@@ -41,13 +41,14 @@ Hier gibt es zum Beispiel:
 #save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
 
 extract_details <- function(video_ids) {
+cat("Getting the details now.. \n")
   video_ids_details <- purrr::map(video_ids, get_video_details)
   
-print("1) Extracting Youtuber")
+cat("1) Extracting Youtuber \n")
 
 channel <- video_ids_details[[1]]$items[[1]]$snippet$channelTitle
 
-print("2) Extracting Dates")
+cat("2) Extracting Dates \n")
 
 publishedAt <- vector()
 for (jj in seq_along(video_ids)) {
@@ -58,7 +59,7 @@ for (jj in seq_along(video_ids)) {
 date <- publishedAt %>% 
   as_date()
 
-print("3) Extracting Titles")
+cat("3) Extracting Titles \n")
 
 titles <- vector()
 for (jj in seq_along(video_ids)) {
@@ -66,7 +67,7 @@ for (jj in seq_along(video_ids)) {
   }
 
 
-print("4) Extracting Tags")
+cat("4) Extracting Tags \n")
 
 
 tags <- list()
@@ -74,7 +75,7 @@ for (jj in seq_along(video_ids)) {
   tags[[jj]] <- video_ids_details[[jj]]$items[[1]]$snippet$tags # tags
   }
 
-print("5) Extracting Video IDs")
+cat("5) Extracting Video IDs \n")
 
 id <- vector()
   for (jj in seq_along(video_ids)) {
@@ -84,7 +85,7 @@ id <- vector()
 
 details <- tibble(channel, id, date, titles, tags)
 
-print("6) Extracting Video Statistics")
+cat("6) Extracting Video Statistics \n")
 
 
 stats <- map_df(video_ids, get_stats) %>% 
@@ -95,7 +96,7 @@ stats <- map_df(video_ids, get_stats) %>%
 
 details <- left_join(details, stats, by = "id")
 
-print("Done!")
+cat("Done!")
 return(details)
 }
 
@@ -103,12 +104,13 @@ return(details)
 # amazingatheist_details <- extract_details(amazingatheist_ids)
 # logicked_details <- extract_details(logicked_ids) 
 # thunder_details <- extract_details(thunder_ids)
+sargon_details <- extract_details(sargon_ids)
 
 # save(armored_details, file = "data/armored_details.Rdata")
 # save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
 # save(logicked_details, file = "data/logicked_details.Rdata")
 # save(thunder_details, file = "data/thunder_details.Rdata")
-
+save(sargon_details, file = "data/sargon_details.Rdata")
 
 ```
 
@@ -119,6 +121,53 @@ load("data/armored_details.Rdata")
 load("data/amazingatheist_details.Rdata")
 load("data/logicked_details.Rdata")
 load("data/thunder_details.Rdata")
+#load("data/sargon_details.Rdata")
+```
+
+# Plot Preparation function
+
+```{r}
+plot_data <- function(comments_dat, details) {
+  
+comments_dat %<>% 
+  mutate(comment = str_to_lower(textOriginal)) %>% 
+  mutate(date_posted = as_date(publishedAt)) %>% 
+  mutate(id = videoId) %>% 
+  mutate(author = authorDisplayName) %>% 
+  mutate(likes = as.numeric(likeCount)) %>% 
+  select(id, author, likes, date_posted, comment)
+  
+  sjw_keywords <- paste("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", sep = "|")
+  
+  
+sjw_dat <- comments_dat %>% 
+  mutate(sjw = ifelse(str_detect(comment, sjw_keywords), 1, 0)) %>% 
+  ddply(.(id), summarise, n_sjw = sum(sjw)) 
+#  group_by(id) %>% 
+#  summarise(n_sjw = sum(sjw))
+
+  religion_keywords <- paste("god", "creation", "heaven", "hell", "relig", "theis", "paradise", "salvation", "religtard", sep = "|")
+
+religion_dat <- comments_dat %>% 
+  mutate(religion = ifelse(str_detect(comment, religion_keywords), 1, 0)) %>% 
+  ddply(.(id), summarise, n_religion = sum(religion)) 
+#  group_by(id) %>% 
+#  summarise(n_religion = sum(religion))
+
+total_dat <- comments_dat %>% 
+  group_by(id) %>% 
+  tally() %>% 
+  mutate(total = n) %>% 
+  select(id, total)
+
+gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>% 
+  left_join(total_dat, by = "id") %>% 
+  gather(term, comment_freq, n_sjw:n_religion, factor_key = TRUE) %>% 
+  mutate(term = ifelse(term == "n_sjw", "SJW", "Religion")) %>% 
+  left_join(details, by = "id") %>% 
+  mutate(comment_prop = comment_freq / total)
+
+}
 ```
 
 
@@ -262,6 +311,33 @@ r_vs_sjw_thunder <- gg_thunder %>%
   ylab("Percentage of Comments per Video")
 
 ggsave(r_vs_sjw_thunder, file = "r_vs_sjw_thunder.png", width = 7, height = 5)
+
+```
+
+## Sargon of Akkad
+
+### Comments
+
+```{r}
+
+# load("data/sargon_comments.Rdata")
+
+gg_sargon <- plot_data(sargon_comments, sargon_details)
+
+
+r_vs_sjw_sargon <- gg_sargon %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+#  geom_step() +
+  geom_smooth() +
+  guides(size = F, alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Mentions of 'Religion' and 'SJW' in Sargon of AKkad's Comments") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video")
+
+ggsave(r_vs_sjw_sargon, file = "r_vs_sjw_sargon.png", width = 7, height = 5)
 
 ```
 
@@ -566,50 +642,6 @@ UCLfhh63n0fWn0gXXKQ5NWvw
 
 
 "http://youtube.com/watch?
-
-
-
-# plot function
-
-```{r}
-plot_data <- function(comments_dat, details) {
-  
-comments_dat %<>% 
-  mutate(comment = str_to_lower(textOriginal)) %>% 
-  mutate(date_posted = as_date(publishedAt)) %>% 
-  mutate(id = videoId) %>% 
-  mutate(author = authorDisplayName) %>% 
-  mutate(likes = as.numeric(likeCount)) %>% 
-  select(id, author, likes, date_posted, comment)
-  
-sjw_dat <- comments_dat %>% 
-  mutate(sjw = ifelse(str_detect(comment, "sjw"), 1, 0)) %>% 
-  ddply(.(id), summarise, n_sjw = sum(sjw)) 
-#  group_by(id) %>% 
-#  summarise(n_sjw = sum(sjw))
-
-religion_dat <- comments_dat %>% 
-  mutate(religion = ifelse(str_detect(comment, "religion"), 1, 0)) %>% 
-  ddply(.(id), summarise, n_religion = sum(religion)) 
-#  group_by(id) %>% 
-#  summarise(n_religion = sum(religion))
-
-total_dat <- comments_dat %>% 
-  group_by(id) %>% 
-  tally() %>% 
-  mutate(total = n) %>% 
-  select(id, total)
-
-gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>% 
-  left_join(total_dat, by = "id") %>% 
-  gather(term, comment_freq, n_sjw:n_religion, factor_key = TRUE) %>% 
-  mutate(term = ifelse(term == "n_sjw", "SJW", "Religion")) %>% 
-  left_join(details, by = "id") %>% 
-  mutate(comment_prop = comment_freq / total)
-
-
-}
-```
 
 # retry function
 
