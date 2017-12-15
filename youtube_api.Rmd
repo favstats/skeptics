@@ -183,18 +183,21 @@ load("data/armored_comments.Rdata")
 
 gg_armored <- plot_data(armored_comments, armored_details)
 
-gg_armored %>% 
+r_vs_sjw_armored <- gg_armored %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
   geom_point(aes(size = comment_prop, alpha = 0.2)) +
   geom_step() +
   geom_smooth() +
   guides(size = F, alpha = F) +
   theme_gdocs() +
-  scale_color_fivethirtyeight(name = "Term") +
-  ggtitle("Mentions of 'Religion' and 'SJW' in Armored Skeptic's Comments") +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in Armored Skeptic's Comments") +
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video")
 
+ggsave(r_vs_sjw_armored, file = "images/r_vs_sjw_armored.png", width = 9, height = 6)
+
+r_vs_sjw_armored
 ```
 
 ### Correlation
@@ -268,13 +271,14 @@ r_vs_sjw_logicked <- gg_logicked %>%
   geom_smooth() +
   guides(size = F, alpha = F) +
   theme_gdocs() +
-  scale_color_fivethirtyeight(name = "Term") +
-  ggtitle("Mentions of 'Religion' and 'SJW' in Logicked's Comments") +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in Logicked's Comments") +
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video")
 
-ggsave(r_vs_sjw_logicked, file = "r_vs_sjw_logicked.png", width = 7, height = 5)
+ggsave(r_vs_sjw_logicked, file = "images/r_vs_sjw_logicked.png", width = 9, height = 6)
 
+r_vs_sjw_logicked
 ```
 
 
@@ -300,17 +304,21 @@ gg_thunder <- plot_data(thunder_comments, thunder_details)
 
 r_vs_sjw_thunder <- gg_thunder %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
-  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+  geom_vline(aes(xintercept=as.Date("2014-08-01")), linetype = 2) +
+  geom_vline(aes(xintercept=as.Date("2012-08-01")), linetype = 2) +
+  geom_point(aes(alpha = 0.2)) +
 #  geom_step() +
   geom_smooth() +
   guides(size = F, alpha = F) +
   theme_gdocs() +
-  scale_color_fivethirtyeight(name = "Term") +
-  ggtitle("Mentions of 'Religion' and 'SJW' in thunderf00t's Comments") +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in thunderf00t's Comments") +
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video")
 
-ggsave(r_vs_sjw_thunder, file = "r_vs_sjw_thunder.png", width = 7, height = 5)
+ggsave(r_vs_sjw_thunder, file = "images/r_vs_sjw_thunder.png", width = 9, height = 6)
+
+r_vs_sjw_thunder
 
 ```
 
@@ -332,12 +340,12 @@ r_vs_sjw_sargon <- gg_sargon %>%
   geom_smooth() +
   guides(size = F, alpha = F) +
   theme_gdocs() +
-  scale_color_fivethirtyeight(name = "Term") +
+  scale_color_fivethirtyeight(name = "Topic") +
   ggtitle("Mentions of 'Religion' and 'SJW' in Sargon of AKkad's Comments") +
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video")
 
-ggsave(r_vs_sjw_sargon, file = "r_vs_sjw_sargon.png", width = 7, height = 5)
+ggsave(r_vs_sjw_sargon, file = "images/r_vs_sjw_sargon.png", width = 7, height = 5)
 
 ```
 
@@ -345,25 +353,25 @@ ggsave(r_vs_sjw_sargon, file = "r_vs_sjw_sargon.png", width = 7, height = 5)
 
 ```{r}
 gg_all <- rbind(plot_data(armored_comments, armored_details),
-                 plot_data(logicked_comments, logicked_details),
+            #     plot_data(logicked_comments, logicked_details),
                 plot_data(thunder_comments, thunder_details))
 
 r_vs_sjw_all <- gg_all %>%
 # filter(date >= as.Date("2012-01-01")) %>% 
-  filter(channel != "Logicked") %>% 
+#  filter(channel != "Logicked") %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
-#  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+  geom_point(aes(alpha = 0.2)) +
   geom_smooth() +
   guides(size = F, alpha = F) +
   theme_gdocs() +
   scale_color_fivethirtyeight(name = "Term") +
-  ggtitle("Mentions of 'Religion' and 'SJW' in Skeptic Community") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video")
 
-ggsave(r_vs_sjw_all, file = "r_vs_sjw_all.png", width = 7, height = 5)
+ggsave(r_vs_sjw_all, file = "images/r_vs_sjw_all.png", width = 7, height = 5)
 
-
+r_vs_sjw_all
 ```
 
 

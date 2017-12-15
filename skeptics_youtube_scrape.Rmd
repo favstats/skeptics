@@ -28,11 +28,11 @@ tuber::yt_oauth(client_id, client_key)
 # Read in TXT
 
 ```{r}
-amazingatheist <- read_file("amazingatheist.txt")
-armored <- read_file("armored.txt")
-logicked <- read_file("logicked.txt")
-thunder <- read_file("thunder.txt")
-sargon <- read_file("sargon.txt")
+amazingatheist <- read_file("text/amazingatheist.txt")
+armored <- read_file("text/armored.txt")
+logicked <- read_file("text/logicked.txt")
+thunder <- read_file("text/thunder.txt")
+sargon <- read_file("text/sargon.txt")
 
 
 ```
