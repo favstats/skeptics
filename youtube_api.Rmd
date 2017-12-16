@@ -137,7 +137,7 @@ comments_dat %<>%
   mutate(likes = as.numeric(likeCount)) %>% 
   select(id, author, likes, date_posted, comment)
   
-  sjw_keywords <- paste("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", sep = "|")
+  sjw_keywords <- paste("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", "regressive", "safe space", "social justice", "warrior", sep = "|")
   
   
 sjw_dat <- comments_dat %>% 
@@ -185,7 +185,7 @@ gg_armored <- plot_data(armored_comments, armored_details)
 
 r_vs_sjw_armored <- gg_armored %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
-  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+  geom_point(aes(size = viewCount, alpha = 0.2)) +
   geom_step() +
   geom_smooth() +
   guides(size = F, alpha = F) +
@@ -204,8 +204,6 @@ r_vs_sjw_armored
 
 ```{r}
 gg_armored %>% 
-  mutate_at(vars(viewCount, likeCount, dislikeCount, favoriteCount),
-            as.numeric) %>% 
   ggplot(aes(date, viewCount, group = term, color = term)) +
   geom_point(aes(size = comment_prop, alpha = 0.8)) +
   geom_step(color = "black") +
@@ -215,8 +213,6 @@ gg_armored %>%
   scale_color_fivethirtyeight(name = "Term")
 
 gg_armored %>% 
-  mutate_at(vars(viewCount, likeCount, dislikeCount, favoriteCount),
-            as.numeric) %>% 
   ggplot(aes(date, likeCount, group = term, color = term)) +
   geom_point(aes(size = comment_prop, alpha = 0.8)) +
   geom_step(color = "black") +
@@ -226,8 +222,6 @@ gg_armored %>%
   scale_color_fivethirtyeight(name = "Term")
 
 gg_armored %>% 
-  mutate_at(vars(viewCount, likeCount, dislikeCount, favoriteCount),
-            as.numeric) %>% 
   ggplot(aes(date, dislikeCount, group = term, color = term)) +
   geom_point(aes(size = comment_prop, alpha = 0.8)) +
   geom_step(color = "black") +
@@ -242,13 +236,17 @@ gg_armored %>%
 
 ```{r}
 armored_comments %>% 
+  mutate(id = videoId) %>% 
   left_join(armored_details, by = "id") %>%
-  mutate_at(vars(viewCount, likeCount, dislikeCount, favoriteCount),
-            as.numeric) %>% 
-  mutate(sjw = as.factor(ifelse(str_detect(comment, "sjw"), 1, 0))) %>% 
-  ggplot(aes(date_posted, viewCount, group = sjw, color = sjw)) + 
-  geom_point(aes(alpha = 0.2)) +
-  geom_smooth(method = "lm")
+  mutate(sjw = as.factor(ifelse(str_detect(textOriginal, as.character(sjw_keywords)), 1, 0))) %>% 
+  ggplot(aes(as.numeric(date), viewCount, group = sjw, fill = sjw)) + 
+  geom_area(aes(y = sjw, position = "fill"))
+
+gg_armored %>% 
+#  filter(term == "SJW") %>% 
+    ggplot(aes(date, viewCount, group = term, fill = term)) + 
+  geom_area(aes(y = comment_prop), size = 1, position = "fill", colour = "black" )
+  
 ```
 
 

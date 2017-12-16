@@ -16,6 +16,8 @@ Get all Video URLs from Channel
 
 ~~Sargon of Akkad https://www.youtube.com/user/SargonofAkkad100~~
 
+Cult of Dusty https://www.youtube.com/user/CultOfDusty
+
 Jeff Holiday https://www.youtube.com/channel/UCAldq8BAAGdsX9UyK_09-ZA
 
 ~~Andy Warski https://www.youtube.com/user/Andywarski~~

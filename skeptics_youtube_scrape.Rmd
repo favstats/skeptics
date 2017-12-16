@@ -36,7 +36,7 @@ sargon <- read_file("text/sargon.txt")
 repzion <- read_file("text/repzion.txt")
 warski <- read_file("text/warski.txt")
 blairewhite <- read_file("text/blairewhite.txt")
-
+cultofdusty <- read_file("text/cultofdusty.txt")
 
 ```
 
@@ -66,6 +66,7 @@ sargon_ids <- extract_video_ids(sargon)
 repzion_ids <- extract_video_ids(stri_enc_toutf8(repzion))
 warski_ids <- extract_video_ids(stri_enc_toutf8(warski))
 blairewhite_ids <- extract_video_ids(stri_enc_toutf8(blairewhite))
+cultofdusty_ids <- extract_video_ids(cultofdusty)
 
 head(armored_ids)
 head(amazingatheist_ids)
@@ -75,6 +76,7 @@ head(sargon_ids)
 head(repzion_ids)
 head(warski_ids)
 head(blairewhite_ids)
+head(cultofdusty_ids)
 ```
 # GetAllComments
 
@@ -364,6 +366,22 @@ blairewhite_comments1 <- extract_comments(blairewhite_ids, 1, "blairewhite")
 blairewhite_comments <- blairewhite_comments1
 
 ```
+
+# Cult of Dusty
+
+## Scraping
+
+```{r}
+
+cultofdusty_comments1 <- extract_comments(cultofdusty_ids, 1, "cultofdusty")
+
+cultofdusty_comments1 <- extract_comments(cultofdusty_ids, 122, "cultofdusty")
+
+blairewhite_comments <- blairewhite_comments1
+
+```
+
+
 
 
 # old scraper
