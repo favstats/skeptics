@@ -34,6 +34,8 @@ logicked <- read_file("text/logicked.txt")
 thunder <- read_file("text/thunder.txt")
 sargon <- read_file("text/sargon.txt")
 repzion <- read_file("text/repzion.txt")
+warski <- read_file("text/warski.txt")
+blairewhite <- read_file("text/blairewhite.txt")
 
 
 ```
@@ -62,6 +64,8 @@ logicked_ids <- extract_video_ids(logicked)
 thunder_ids <- extract_video_ids(thunder)
 sargon_ids <- extract_video_ids(sargon)
 repzion_ids <- extract_video_ids(stri_enc_toutf8(repzion))
+warski_ids <- extract_video_ids(stri_enc_toutf8(warski))
+blairewhite_ids <- extract_video_ids(stri_enc_toutf8(blairewhite))
 
 head(armored_ids)
 head(amazingatheist_ids)
@@ -69,7 +73,8 @@ head(logicked_ids)
 head(thunder_ids)
 head(sargon_ids)
 head(repzion_ids)
-
+head(warski_ids)
+head(blairewhite_ids)
 ```
 # GetAllComments
 
@@ -170,6 +175,7 @@ readkey <- function() {
     line <- readline(prompt = "Are you there? Press [enter]")
 }
 
+
 authentication <- function() {
   beepr::beep(5)
   readkey()
@@ -195,14 +201,14 @@ extract_comments <- function(ids, n, youtuber) {
     error = function(e){
       e
     })
-    if (is.data.frame(outcome)) { #Not sure what this does
+    if (is.data.frame(outcome)) { #checking if an error occured
       comments[[jj]] <- outcome
     } else if (str_detect(outcome$message, "401")) { #if Error Message include 401
       cat("\n Loop stopped on iteration ", jj)
       cat("\n", outcome$message)
       message("\n YouTube Authentication needed!")
       cat("\n Saving data for safety...")
-      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))     
+      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))   
       cat("\t Done! \n")
       authentication()
       cat("\n Waiting for 10 seconds...")
@@ -214,7 +220,7 @@ extract_comments <- function(ids, n, youtuber) {
       cat("\n", outcome$message)
       cat("\n Encountered problem at iteration ", jj)
       cat("\n Saving data for safety...")
-      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))     
+      save(comments, file = paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))   
       cat("\t Done!")
       cat("\n Waiting for 20 seconds and..")
       Sys.sleep(20)
@@ -229,7 +235,7 @@ extract_comments <- function(ids, n, youtuber) {
       Sys.sleep(10)
       cat("\n Skipping", jj, "\n")
       next
-    }
+    } # TODO(favstats): failsafe what happens if another error happens?
     cat(paste0("\t", jj)) 
   }   # End of the for loop
   cat("\n Binding rows. Might take while.. \t")
@@ -333,6 +339,32 @@ repzion_comments <- repzion_comments1
 
 
 ```
+
+# Warski
+
+## Scraping
+
+```{r}
+## Try 1
+warski_comments1 <- extract_comments(warski_ids, 183, "warski")
+
+warski_comments <- rwarski_comments1
+
+
+```
+
+# Blaire White
+
+## Scraping
+
+```{r}
+
+blairewhite_comments1 <- extract_comments(blairewhite_ids, 1, "blairewhite")
+
+blairewhite_comments <- blairewhite_comments1
+
+```
+
 
 # old scraper
 
