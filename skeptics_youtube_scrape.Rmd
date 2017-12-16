@@ -33,6 +33,7 @@ armored <- read_file("text/armored.txt")
 logicked <- read_file("text/logicked.txt")
 thunder <- read_file("text/thunder.txt")
 sargon <- read_file("text/sargon.txt")
+repzion <- read_file("text/repzion.txt")
 
 
 ```
@@ -60,12 +61,14 @@ amazingatheist_ids <- extract_video_ids(amazingatheist)
 logicked_ids <- extract_video_ids(logicked)
 thunder_ids <- extract_video_ids(thunder)
 sargon_ids <- extract_video_ids(sargon)
+repzion_ids <- extract_video_ids(stri_enc_toutf8(repzion))
 
 head(armored_ids)
 head(amazingatheist_ids)
 head(logicked_ids)
 head(thunder_ids)
 head(sargon_ids)
+head(repzion_ids)
 
 ```
 # GetAllComments
@@ -207,6 +210,7 @@ extract_comments <- function(ids, n, youtuber) {
       cat("\t Done! \n Continuing...")
       comments[[jj]] <- get_all_comments2(ids[jj])
     } else if (str_detect(outcome$message, "400")) { #if Error Message include 400
+        beepr::beep(9)
       cat("\n", outcome$message)
       cat("\n Encountered problem at iteration ", jj)
       cat("\n Saving data for safety...")
@@ -219,6 +223,7 @@ extract_comments <- function(ids, n, youtuber) {
       cat("\n Puuh... this worked. Deleting file.\n")
       file.remove(paste0("data/", youtuber, "_comments_",  n, "_", jj, ".Rdata"))
     } else if (str_detect(outcome$message, "403")) { #if Error Message include 403
+        beepr::beep(11)      
       cat("\n", outcome$message)
       cat("\n Encountered problem at iteration ", jj)
       Sys.sleep(10)
@@ -285,25 +290,7 @@ save(amazingatheist_comments, file = "data/amazingatheist_comments.Rdata")
 
 ```{r}
 
-logicked_comments <- list()
-for (jj in seq_along(logicked_ids)) {  
-  logicked_comments[[jj]] <- get_all_comments2(logicked_ids[jj])
-  cat(jj)
-}
-
-logicked_comments1 <- list()
-logicked_ids1 <- logicked_ids[75:length(logicked_ids)]
-for (jj in seq_along(logicked_ids1)) {  
-  logicked_comments1[[jj]] <- get_all_comments2(logicked_ids1[jj])
-  cat(jj)
-}
-
-logicked_data1 <- bind_rows(logicked_comments)
-logicked_data2 <- bind_rows(logicked_comments1)
-
-logicked_comments <- rbind(logicked_data1, logicked_data2)
-
-#save(logicked_comments, file = "data/logicked_comments.Rdata")
+logicked_comments1 <- extract_comments(logicked_ids, 1, "thunder")
 
 
 ```
@@ -315,83 +302,8 @@ logicked_comments <- rbind(logicked_data1, logicked_data2)
 ## Scraping
 
 ```{r}
-thunder_comments <- list()
-for (jj in seq_along(thunder_ids)) {  
-  thunder_comments[[jj]] <- get_all_comments2(thunder_ids[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
 
-thunder_comments1 <- bind_rows(thunder_comments)
-
-save(thunder_comments1, file = "data/thunder1.Rdata")
-
-thunder_ids1 <- thunder_ids[183:length(thunder_ids)]
-thunder_comments_1 <- list()
-for (jj in seq_along(thunder_ids)) {  
-  thunder_comments_1[[jj]] <- get_all_comments2(thunder_ids1[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
-
-thunder_comments_2 <- bind_rows(thunder_comments_1)
-
-save(thunder_comments_2, file = "data/thunder2.Rdata")
-
-thunder_ids2 <- thunder_ids1[199:length(thunder_ids1)]
-thunder_comments_22 <- list()
-for (jj in seq_along(thunder_ids2)) {  
-  thunder_comments_22[[jj]] <- get_all_comments2(thunder_ids2[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
-
-thunder_comments_3 <- bind_rows(thunder_comments_22)
-
-save(thunder_comments_3, file = "data/thunder3.Rdata")
-
-
-thunder_ids3 <- thunder_ids2[178:length(thunder_ids2)]
-thunder_comments_222 <- list()
-for (jj in seq_along(thunder_ids3)) {  
-  thunder_comments_222[[jj]] <- get_all_comments2(thunder_ids3[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
-
-thunder_comments_4 <- bind_rows(thunder_comments_222)
-
-save(thunder_comments_4, file = "data/thunder4.Rdata")
-
-thunder_ids4 <- thunder_ids3[50:length(thunder_ids3)]
-thunder_comments_2222 <- list()
-for (jj in seq_along(thunder_ids4)) {  
-  thunder_comments_2222[[jj]] <- get_all_comments2(thunder_ids4[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
-
-thunder_comments_5 <- bind_rows(thunder_comments_2222)
-
-save(thunder_comments_5, file = "data/thunder5.Rdata")
-
-thunder_ids5 <- thunder_ids4[94:length(thunder_ids4)]
-thunder_comments_22222 <- list()
-for (jj in seq_along(thunder_ids5)) {  
-  thunder_comments_22222[[jj]] <- get_all_comments2(thunder_ids5[jj])
-  cat(paste0("\t",jj))
-  BRRR::skrrrahh(jj)
-}
-
-thunder_comments_6 <- bind_rows(thunder_comments_22222)
-
-save(thunder_comments_6, file = "data/thunder6.Rdata")
-
-thunder_comments <- rbind(thunder_comments1, thunder_comments_2,
-                          thunder_comments_3, thunder_comments_4,
-                          thunder_comments_5, thunder_comments_6)
-
-save(thunder_comments, file = "data/thunder_comments.Rdata")
+thunder_comments1 <- extract_comments(thunder_ids, 1, "thunder")
 
 ```
 
@@ -407,6 +319,21 @@ sargon_comments1 <- extract_comments(sargon_ids, 1, "sargon")
 sargon_comments <- sargon_comments1
 
 ```
+
+# Mr Repzion
+
+## Scraping
+
+```{r}
+
+## Try 1
+repzion_comments1 <- extract_comments(repzion_ids, 1, "repzion")
+
+repzion_comments <- repzion_comments1
+
+
+```
+
 # old scraper
 
 - ACHTUNG! REMOVE THE (POSSIBLE) DUPLICATES!
