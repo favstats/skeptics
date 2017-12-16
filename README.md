@@ -14,15 +14,16 @@ Get all Video URLs from Channel
 
 # Some channels that would be interesting to look at:
 
-Sargon of Akkad https://www.youtube.com/user/SargonofAkkad100
+~~Sargon of Akkad https://www.youtube.com/user/SargonofAkkad100~~
 
-Jeff Holyday https://www.youtube.com/channel/UCAldq8BAAGdsX9UyK_09-ZA
+Jeff Holiday https://www.youtube.com/channel/UCAldq8BAAGdsX9UyK_09-ZA
 
-Andy Warski https://www.youtube.com/user/Andywarski
+~~Andy Warski https://www.youtube.com/user/Andywarski~~
 
 Computing Forever https://www.youtube.com/user/LACK78
 
 Harmful Opinions https://www.youtube.com/watch?v=Mt41OxkAq7s
+
 Vee https://www.youtube.com/user/veemonro
 
 Bearing https://www.youtube.com/channel/UCwW_vaMPlq8J4weKDsfeJzw
@@ -31,7 +32,7 @@ Undoomed https://www.youtube.com/channel/UCTrecbx23AAYdmFHDkci0aQ
 
 That Guy T https://www.youtube.com/channel/UCLJkNhB1Eg_mXx0quUju0Og
 
-Blaire White https://www.youtube.com/channel/UCDmCBKaKOtOrEqgsL4-3C8Q
+~~Blaire White https://www.youtube.com/channel/UCDmCBKaKOtOrEqgsL4-3C8Q~~
 
 Paul Joseph Watson https://www.youtube.com/user/PrisonPlanetLive
 
