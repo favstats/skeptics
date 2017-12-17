@@ -133,43 +133,64 @@ load("data/cultofdusty_details.Rdata")
 # Plot Preparation function
 
 ```{r}
-plot_data <- function(comments_dat, details, youtuber, save = F) {
+sjw_keywords <- c("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", "regressive", "safe space", "social justice", "warrior", "snowflake", "identity politics", "classical liberal", "white knight", "white guilt", "mra")
+
+  religion_keywords <- c("god", "creation", "heaven", "hell", "relig", "theis", "paradise", "salvation", "religtard", "creed", "cult", "scripture", "devout", "divin", "pious", "theol", "pray", "sacred", "saint", "angel", "devil", "demon", "holy")
+
+
+plot_data <- function(comments_dat, details, 
+                      youtuber, 
+                      keywords1 = keywords1,
+                      keywords2 = keywords2,
+                      keyword1_name = "SJW", 
+                      keyword2_name = "Religion", 
+                      save = F) {
+  
+  cat("1) Transforming Data \n")
   
 comments_dat %<>% 
   mutate(comment = str_to_lower(textOriginal)) %>% 
   mutate(date_posted = as_date(publishedAt)) %>% 
   mutate(id = videoId) %>% 
   mutate(author = authorDisplayName) %>% 
+  mutate(author_id = authorChannelId.value) %>% 
   mutate(likes = as.numeric(likeCount)) %>% 
-  select(id, author, likes, date_posted, comment)
+  select(id, author, author_id, likes, date_posted, comment)
   
-  sjw_keywords <- paste("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", "regressive", "safe space", "social justice", "warrior", "snowflake", "identity politics", "classical liberal", "white knight", "white guilt", "mra", sep = "|")
+  keywords1 <- paste(sjw_keywords, collapse = "|")
   
+  cat("2) Get first keywords with topic:", keyword1_name ,"\n")
   
-sjw_dat <- comments_dat %>% 
-  mutate(sjw = ifelse(str_detect(comment, sjw_keywords), 1, 0)) %>% 
-  ddply(.(id), summarise, n_sjw = sum(sjw)) 
+keywords1_dat <- comments_dat %>% 
+  mutate(keywords1 = ifelse(str_detect(comment, keywords1), 1, 0)) %>% 
+  ddply(.(id), summarise, n_keywords1 = sum(keywords1)) 
 #  group_by(id) %>% 
 #  summarise(n_sjw = sum(sjw))
 
-  religion_keywords <- paste("god", "creation", "heaven", "hell", "relig", "theis", "paradise", "salvation", "religtard", "creed", "cult", "scripture", "devout", "divin", "pious", "theol", "pray", "sacred", "saint", "angel", "devil", "demon", "holy", sep = "|")
+  keywords2 <- paste(religion_keywords, collapse = "|")
+  
+  cat("3) Get second keywords with topic:", keyword2_name ,"\n")
 
-religion_dat <- comments_dat %>% 
-  mutate(religion = ifelse(str_detect(comment, religion_keywords), 1, 0)) %>% 
-  ddply(.(id), summarise, n_religion = sum(religion)) 
+keywords2_dat <- comments_dat %>% 
+  mutate(keywords2 = ifelse(str_detect(comment, keywords2), 1, 0)) %>% 
+  ddply(.(id), summarise, n_keywords2 = sum(keywords2)) 
 #  group_by(id) %>% 
 #  summarise(n_religion = sum(religion))
 
+  cat("4) Get all comments \n")
+
 total_dat <- comments_dat %>% 
   group_by(id) %>% 
-  tally() %>% 
+  dplyr::count() %>% 
   mutate(total = n) %>% 
   select(id, total)
 
-gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>% 
+  cat("5) More transformations \n")
+
+gg_dat <- left_join(keywords1_dat, keywords2_dat, by = "id") %>% 
   left_join(total_dat, by = "id") %>% 
-  gather(term, comment_freq, n_sjw:n_religion, factor_key = TRUE) %>% 
-  mutate(term = ifelse(term == "n_sjw", "SJW", "Religion")) %>% 
+  gather(term, comment_freq, n_keywords1:n_keywords2, factor_key = TRUE) %>% 
+  mutate(term = ifelse(term == "n_keywords1", keyword1_name, keyword2_name)) %>% 
   left_join(details, by = "id") %>% 
   mutate(comment_prop = comment_freq / total) %>% 
   mutate(Views = viewCount) %>% 
@@ -178,13 +199,26 @@ gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>%
   mutate(channel = factor(channel, levels = rev(levels(channel)))) %>% 
   mutate(Likes = likeCount) %>% 
   mutate(Dislikes = dislikeCount) %>%   
-  mutate(Dislike_Ratio = Dislikes/(Likes + Dislikes)) 
+  mutate(Dislike_Ratio = Dislikes/(Likes + Dislikes)) %>% 
+  select(id, total, term, comment_freq, channel, date, titles, tags, comment_prop,
+         Views, Likes, Dislikes, Dislike_Ratio)
 
 if (save == T) save(gg_dat, file = paste0("data/gg_", youtuber, ".Rdata"))
+
+  cat("6) Done \n")
 
 return(gg_dat)
 
 }
+
+
+gg_armored <- system.time (plot_data(armored_comments, 
+                        armored_details, 
+                        "armored", 
+                        keywords1 = sjw_keywords,
+                        keywords2 = religion_keywords,
+                        keyword1_name = "SJW", 
+                        keyword2_name = "Religion", save = T) )
 ```
 
 
@@ -210,28 +244,48 @@ repzion_details  <- get(load("data/repzion_details.Rdata"))
 # amazingatheist_details  <- get(load("data/amazingatheist_details.Rdata"))
 ```
 
-## Transform for plotting
+## SJW Transform
 
 ```{r}
 gg_armored <- plot_data(armored_comments, 
                             armored_details, 
-                            "armored", save = T)
+                            "armored", 
+                        keywords1 = sjw_keywords,
+                        keywords2 = religion_keywords,
+                        keyword1_name = "SJW", 
+                        keyword2_name = "Religion", save = T)
 
 gg_logicked <- plot_data(logicked_comments, 
                             logicked_details, 
-                            "logicked", save = T)
+                            "logicked", 
+                        keywords1 = sjw_keywords,
+                        keywords2 = religion_keywords,
+                        keyword1_name = "SJW", 
+                        keyword2_name = "Religion", save = T)
 
 gg_thunder <- plot_data(thunder_comments, 
                             thunder_details, 
-                            "thunder", save = T)
+                            "thunder", 
+                        keywords1 = sjw_keywords,
+                        keywords2 = religion_keywords,
+                        keyword1_name = "SJW", 
+                        keyword2_name = "Religion", save = T)
 
 gg_cultofdusty <- plot_data(cultofdusty_comments, 
                             cultofdusty_details, 
-                            "cultofdusty", save = T)
+                            "cultofdusty", 
+                        keywords1 = sjw_keywords,
+                        keywords2 = religion_keywords,
+                        keyword1_name = "SJW", 
+                        keyword2_name = "Religion", save = T)
 
 gg_repzion <- plot_data(repzion_comments, 
                             repzion_details, 
-                            "repzion", save = T)
+                            "repzion", 
+                        keywords1 = sjw_keywords,
+                        keywords2 = religion_keywords,
+                        keyword1_name = "SJW", 
+                        keyword2_name = "Religion", save = T)
 
 # gg_amazingatheist <- plot_data(amazingatheist_comments, 
 #                             amazingatheist_details, 
