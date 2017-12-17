@@ -393,26 +393,181 @@ r_vs_sjw_cultofdusty
 ## All together
 
 ```{r}
-load("data/gg_amazingatheist.Rdata")
-load("data/gg_armored.Rdata")
-load("data/gg_logicked.Rdata")
-load("data/gg_logicked.Rdata")
-load("data/gg_thunder.Rdata")
+gg_amazingatheist <- get(load("data/gg_amazingatheist.Rdata"))
+gg_armored <- get(load("data/gg_armored.Rdata"))
+gg_logicked <- get(load("data/gg_logicked.Rdata"))
+gg_cultofdusty <- get(load("data/gg_cultofdusty.Rdata"))
+gg_thunder        <- get(load("data/gg_thunder.Rdata"))
 
 gg_all <- rbind(gg_amazingatheist,
                 gg_armored,
                 gg_cultofdusty,
                 gg_logicked,
-                gg_thunder)
+                gg_thunder)  %>% 
+  mutate(Views = viewCount) %>% 
+  mutate(date = as_date(date)) %>% 
+  mutate(channel = as.factor(channel)) %>% 
+  mutate(channel = factor(channel, levels = rev(levels(channel))))
+
+fct_reorder(gg_all, date, .desc = TRUE)
+
+mutate()
+
+theme_set(theme_gdocs(base_size = 28)) 
+
+elevatorgate <- as_date("2011-06-20")
+gamergate <- as_date("2014-08-15")
+atheismplus <- as_date("2012-08-19")
+
+
+
 ```
+
+
 
 
 ### Over Time
 
+#### gg_dates
+
+```{r}
+gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet = F, textsize = 18, linecolor = NA) {
+  
+  elevatorgate <- as_date("2011-06-20")
+  gamergate <- as_date("2014-08-15")
+  atheismplus <- as_date("2012-08-19")
+  
+  r_vs_sjw_all_time <- dataframe %>%
+#  filter(date >= as.Date("2012-01-01")) %>% 
+#  filter(channel != "Logicked") %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  scale_x_date() +
+  scale_y_continuous(labels = scales::percent) +
+  geom_point(aes(size = Views, alpha = 0.2)) +
+  geom_smooth(color = linecolor) +
+  guides(alpha = F) +
+  theme_gdocs(base_size = textsize) +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video")
+  if (events == T) {
+    r_vs_sjw_all_time <- r_vs_sjw_all_time + 
+      geom_segment(aes(elevatorgate, y = 0, 
+                     xend = elevatorgate, 
+                     yend = max(comment_prop)), 
+                     linetype = 6, 
+                     size = 1, 
+                     color = "black") +
+     annotate("text", 
+             x = elevatorgate, 
+             y = -0.02, 
+             label = "''Elevatorgate''", 
+             size = 7) +
+     geom_segment(aes(gamergate, 
+                     y = 0, 
+                     xend = gamergate, 
+                     yend = max(comment_prop)), 
+                     linetype = 6, 
+                     size = 1, 
+                 color = "black") +
+     annotate("text", 
+             x = gamergate, 
+             y = -0.02, 
+             label = "''Gamergate''", 
+             size = 7) +
+     geom_segment(aes(atheismplus, 
+                     y = 0, 
+                     xend = atheismplus, 
+                     yend = max(comment_prop)), 
+                     linetype = 6, 
+                     size = 1, 
+                     color = "black") +
+     annotate("text", 
+             x = atheismplus, 
+             y = 0.61, label = "''Atheism+''", 
+             size = 7)
+  }
+  if (facet == T) {
+     r_vs_sjw_all_time <- r_vs_sjw_all_time +
+  facet_wrap(~channel + term, ncol = 2) 
+  }
+
+ggsave(r_vs_sjw_all_time, file = paste0("images/", name, ".png"), width = width, height = height)
+
+return(r_vs_sjw_all_time)
+
+}
+```
+
+
 ```{r}
 
 
-r_vs_sjw_all1 <- gg_all %>%
+gg_all %>% 
+  gg_dates(name = "r_vs_sjw_all_time", events = T)
+
+gg_all %>% 
+  gg_dates(name = "r_vs_sjw_all_time_f", 
+           events = F,
+           facet = T, 
+           height = 15, 
+           width = 12, 
+           linecolor = "black") 
+
+r_vs_sjw_all_time <- gg_all %>%
+#  filter(date >= as.Date("2012-01-01")) %>% 
+#  filter(channel != "Logicked") %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  scale_x_date() +
+  geom_point(aes(size = Views, alpha = 0.2)) +
+  geom_segment(aes(elevatorgate, y = 0, 
+                   xend = elevatorgate, 
+                   yend = max(comment_prop)), 
+                   linetype = 6, 
+                   size = 1, 
+                   color = "black") +
+  annotate("text", 
+           x = elevatorgate, 
+           y = -0.02, 
+           label = "''Elevatorgate''", 
+           size = 7) +
+  geom_segment(aes(gamergate, 
+                   y = 0, 
+                   xend = gamergate, 
+                   yend = max(comment_prop)), 
+                   linetype = 6, 
+                   size = 1, 
+               color = "black") +
+  annotate("text", 
+           x = gamergate, 
+           y = -0.02, 
+           label = "''Gamergate''", 
+           size = 7) +
+  geom_segment(aes(atheismplus, 
+                   y = 0, 
+                   xend = atheismplus, 
+                   yend = max(comment_prop)), 
+                   linetype = 6, 
+                   size = 1, 
+                   color = "black") +
+  annotate("text", 
+           x = atheismplus, 
+           y = 0.61, label = "''Atheism+''", 
+           size = 7) +
+  geom_smooth() +
+  guides(alpha = F) +
+  theme_gdocs(base_size = 18) +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video")
+
+ggsave(r_vs_sjw_all_time, file = "images/r_vs_sjw_all_time.png", width = 14, height = 10)
+
+r_vs_sjw_all_time
+
+r_vs_sjw_all_time_f <- gg_all %>%
   mutate(Views = viewCount) %>% 
 # filter(date >= as.Date("2012-01-01")) %>% 
 #  filter(channel != "Logicked") %>% 
@@ -420,16 +575,16 @@ r_vs_sjw_all1 <- gg_all %>%
   geom_point(aes(size = Views, alpha = 0.2)) +
   geom_smooth(color = "black") +
   guides(alpha = F) +
-  theme_gdocs() +
-  scale_color_fivethirtyeight(name = "Term") +
+  theme_gdocs(base_size = 18) +
+  scale_color_fivethirtyeight(name = "Topic") +
   ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video") +
   facet_wrap(~channel + term, ncol = 2)
 
-ggsave(r_vs_sjw_all1, file = "images/r_vs_sjw_all1.png", width = 10, height = 14)
+ggsave(r_vs_sjw_all_time_f, file = "images/r_vs_sjw_all_time_f.png", width = 12, height = 14)
 
-r_vs_sjw_all1
+r_vs_sjw_all_time_f
 
 
 r_vs_sjw_all2 <- gg_all %>%
