@@ -185,7 +185,6 @@ readkey <- function() {
     line <- readline(prompt = "Are you there? Press [enter]")
 }
 
-readkey()
 
 
 authentication <- function() {
