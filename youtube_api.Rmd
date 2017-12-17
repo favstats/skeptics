@@ -8,7 +8,7 @@ output: html_notebook
 ```{r}
 #devtools::install_github("soodoku/tuber")
 
-pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr)
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, tm, textstem, tidytext)
 
 options(scipen = 99999)
 
@@ -843,7 +843,196 @@ ggsave(r_vs_sjw_all8_f, file = "images/r_vs_sjw_all8_f.png", height = 14, width 
 r_vs_sjw_all8_f
 ```
 
+# Sentiment Analysis
+## str_sentiment
 
+```{r}
+str_sentiment <- function(x){
+  tab <- data.frame(x = x, stringsAsFactors = F) %>%
+   dplyr::mutate(id = 1:n()) %>%
+   tidytext::unnest_tokens(word, x) 
+
+  bing <- tab %>% 
+    dplyr::inner_join(get_sentiments("bing")) %>%
+    dplyr::mutate(method = "bing")
+  
+  nrc <- tab %>% 
+    dplyr::inner_join(get_sentiments("nrc")) %>% 
+    dplyr::filter(sentiment %in% c("positive", "negative")) %>%
+    dplyr::mutate(method = "nrc")
+  
+  afinn <- tab %>% 
+    dplyr::inner_join(get_sentiments("afinn")) %>% 
+    dplyr::mutate(sentiment = ifelse(score > 0, "positive", "negative")) %>%
+    dplyr::mutate(method = "afinn", score = NULL)
+  
+  dat <- rbind(bing, nrc, afinn) %>%
+    #mutate(sent = sentiment) %>%
+    dplyr::mutate(sent = ifelse(sentiment == "positive", 1, -1)) %>%
+    dplyr::group_by(id, method) %>%
+    dplyr::summarise(sent = mean(sent)) %>% 
+    dplyr::ungroup() %>%
+    tidyr::spread(key = "method", "sent")
+
+  emotions <- tab %>% 
+    dplyr::inner_join(get_sentiments("nrc")) %>%
+    dplyr::rename(sent = sentiment) %>%
+    dplyr::group_by(id) %>%
+    dplyr::count(sent) %>%
+    tidyr::spread("sent", "n") %>%
+    dplyr::right_join(dat, by = "id")
+    
+  return(emotions)
+}
+
+```
+
+## str_clean
+
+```{r}
+str_clean <- function(x, new_stop = NULL){
+  
+  sw <- tm::stopwords("eng")
+  if(!is.null(new_stop)) sw <- append(sw, new_stop)
+  
+  library(dplyr)
+  text_dat <- data.frame(id = 1:length(x), ctext = x, stringsAsFactors = F) %>%
+    mutate(block = ntile(id, 100))
+  
+  stopwords <- function(x) {
+    temp <- x %>%
+      tidytext::unnest_tokens(word, ctext) %>%
+      dplyr::anti_join(data.frame(word = sw, stringsAsFactors = F), by = "word") %>%
+      dplyr::group_by(id) %>%
+      dplyr::summarise(comment_clean = paste(word, collapse = " ")) %>%
+      dplyr::mutate(comment_clean = 
+        comment_clean %>% 
+          stringr::str_replace_all("http.*", "") %>%
+          textstem::lemmatize_strings() %>%
+          stringr::str_replace_all("\\'", "") %>%
+          stringr::str_replace_all("\\b[[:alpha:]]{1,1}\\b", "") %>%
+          stringr::str_to_lower() %>% 
+          stringr::str_replace_all("[^a-z\\s]", " ") %>%
+          stringr::str_replace_all("\\s+", " ") %>%
+          stringr::str_trim()
+      )
+    return(temp)
+  }
+  
+  cleaned <- list()
+  for(jj in seq_along(unique(text_dat$block))){
+    cleaned[[jj]] <- stopwords(x = text_dat[text_dat$block == jj,])
+    svMisc::progress(jj, progress.bar = T)
+#    cat("block:", jj, "of 100\n")
+  }
+  text_dat <- bind_rows(cleaned)
+  
+  cat("\n ... DONE ...")
+  return(text_dat)
+}
+
+prepare_comments <- function(comments_dat, min_words = 5) {
+comments_dat %<>% 
+  mutate(comment = str_to_lower(textOriginal)) %>% 
+  mutate(date_posted = as_date(publishedAt)) %>% 
+  mutate(video_id = videoId) %>% 
+  mutate(author = authorDisplayName) %>% 
+  mutate(author_id = authorChannelId.value) %>% 
+  mutate(comment_likes = as.numeric(likeCount)) %>% 
+  select(video_id, author, author_id, comment_likes, date_posted, comment) %>% 
+  mutate(comment = stringi::stri_enc_toascii(comment)) %>% 
+  mutate(words = str_split(comment, "\\s+")) %>% 
+  mutate(nword = sapply(words, length))  %>%
+  filter(nword > min_words)
+}
+```
+
+## Cleaning Armored Skeptic
+
+```{r}
+
+load("data/armored_comments.Rdata")
+
+emotionize <- function(comments_dat, min_words = 5) {
+
+cat("Preparing Comments \n")
+  
+comments_dat <- prepare_comments(comments_dat, min_words = min_words)
+
+cat("\n Cleaning data \n")
+
+comments_dat_clean <- str_clean(comments_dat$comment)
+
+comments_dat_clean <- comments_dat %>%
+  dplyr::mutate(id = 1:n()) %>%
+  dplyr::left_join(comments_dat_clean, by = "id")
+
+cat("\n Sentiment Analysis \n")
+
+comments_sent <- str_sentiment(x = comments_dat_clean$comment)
+
+comments_sent <- comments_dat_clean %>%
+  dplyr::mutate(id = 1:n()) %>%
+  dplyr::left_join(comments_sent)
+
+cat("\n Done!")
+
+return(comments_sent)
+
+}
+
+
+emotionize(armored_comments)
+```
+
+
+
+```{r}
+
+
+
+
+# comments1 <- comments_sent %>% 
+#   filter(anger > 0) %>% 
+#   filter(comment != "")
+
+
+comments_sent %>% 
+  ggplot(aes(date_posted, afinn)) + 
+  geom_col()
+
+
+comments_sent %>% 
+  ggplot(aes(date_posted, bing)) + 
+  geom_col()
+
+comments_sent %>% 
+  ggplot(aes(date_posted, nrc)) + 
+  geom_col()
+
+comments_sent %>% 
+  ggplot(aes(date_posted, anger)) + 
+  geom_col()
+
+comments_sent %>% 
+  ggplot(aes(date_posted, joy)) + 
+  geom_smooth()
+
+
+comments_sent_long <- comments_sent  %>% 
+  gather(emotion, value, anger:trust, factor_key = TRUE)
+
+armored_emotions <- comments_sent_long %>% 
+  ggplot(aes(date_posted, value, group = emotion, color = emotion)) + 
+#  geom_point() +
+#  geom_smooth(method = "lm") +
+  geom_col(show.legend = FALSE) +
+  ggthemes::scale_color_gdocs() +
+  facet_wrap(~emotion, ncol = 1)
+
+ggsave(armored_emotions, "images/armored_emotions.png", width = 10, height = 15)
+
+```
 
 # If I only knew.. unfortunately you only get 300 videos total
 
