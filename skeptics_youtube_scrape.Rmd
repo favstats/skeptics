@@ -12,6 +12,8 @@ pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate,
 
 ```
 
+
+
 # Authentication
 
 ```{r}
@@ -25,6 +27,8 @@ tuber::yt_oauth(client_id, client_key)
 
 ```
 
+googleapis.com/youtube/analytics/v1/reports?ids=channel%3D%3DUC-yewGHQbNFpDrGM0diZOLA&start-date=2016-01-01&end-date=2017-06-13&metrics=subscribersLost%2CsubscribersGained&key=Y0eW96yy-WRg90RZjVJS615o
+
 # Read in TXT
 
 ```{r}
@@ -37,7 +41,8 @@ repzion <- read_file("text/repzion.txt")
 warski <- read_file("text/warski.txt")
 blairewhite <- read_file("text/blairewhite.txt")
 cultofdusty <- read_file("text/cultofdusty.txt")
-
+bps <- read_file("text/bps.txt")
+undoomed <- read_file("text/undoomed.txt")
 ```
 
 # Extract URLs
@@ -67,6 +72,8 @@ repzion_ids <- extract_video_ids(stri_enc_toutf8(repzion))
 warski_ids <- extract_video_ids(stri_enc_toutf8(warski))
 blairewhite_ids <- extract_video_ids(stri_enc_toutf8(blairewhite))
 cultofdusty_ids <- extract_video_ids(cultofdusty)
+bps_ids <- extract_video_ids(bps)
+undoomed_ids <- extract_video_ids(undoomed)
 
 head(armored_ids)
 head(amazingatheist_ids)
@@ -77,6 +84,7 @@ head(repzion_ids)
 head(warski_ids)
 head(blairewhite_ids)
 head(cultofdusty_ids)
+head(bps_ids)
 ```
 # GetAllComments
 
@@ -391,8 +399,25 @@ save(cultofdusty_comments, file = "data/cultofdusty_comments.Rdata")
 
 ```
 
+# Black Pigeon Speaks
 
+## Scraping
 
+```{r}
+
+bps_comments1 <- extract_comments(bps_ids, 1, "bps")
+
+```
+
+# Undoomedd
+
+## Scraping
+
+```{r}
+
+undoomed_comments1 <- extract_comments(undoomed_ids, 1, "undoomed")
+
+```
 
 # old scraper
 

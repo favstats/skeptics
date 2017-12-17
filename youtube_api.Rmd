@@ -107,14 +107,16 @@ return(details)
 # logicked_details <- extract_details(logicked_ids) 
 # thunder_details <- extract_details(thunder_ids)
 # sargon_details <- extract_details(sargon_ids)
-cultofdusty_details <- extract_details(cultofdusty_ids)
+# cultofdusty_details <- extract_details(cultofdusty_ids)
+repzion_details <- extract_details(repzion_ids)
 
 # save(armored_details, file = "data/armored_details.Rdata")
 # save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
 # save(logicked_details, file = "data/logicked_details.Rdata")
 # save(thunder_details, file = "data/thunder_details.Rdata")
 # save(sargon_details, file = "data/sargon_details.Rdata")
-save(cultofdusty_details, file = "data/cultofdusty_details.Rdata")
+# save(cultofdusty_details, file = "data/cultofdusty_details.Rdata")
+ save(repzion_details, file = "data/repzion_details.Rdata")
 ```
 
 ## load details
@@ -141,7 +143,7 @@ comments_dat %<>%
   mutate(likes = as.numeric(likeCount)) %>% 
   select(id, author, likes, date_posted, comment)
   
-  sjw_keywords <- paste("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", "regressive", "safe space", "social justice", "warrior", sep = "|")
+  sjw_keywords <- paste("blm", "black lives matter", "feminis", "race", "racis", "sexis", "postmodern", "marx", "antifa", "pc", "political correctness", "regressive", "safe space", "social justice", "warrior", "snowflake", "identity politics", "classical liberal", "white knight", sep = "|")
   
   
 sjw_dat <- comments_dat %>% 
@@ -150,7 +152,7 @@ sjw_dat <- comments_dat %>%
 #  group_by(id) %>% 
 #  summarise(n_sjw = sum(sjw))
 
-  religion_keywords <- paste("god", "creation", "heaven", "hell", "relig", "theis", "paradise", "salvation", "religtard", sep = "|")
+  religion_keywords <- paste("god", "creation", "heaven", "hell", "relig", "theis", "paradise", "salvation", "religtard", "creed", "cult", "scripture", "devout", "divin", "pious", "theol", "pray", "sacred", "saint", "angel", "devil", "demon", "holy", sep = "|")
 
 religion_dat <- comments_dat %>% 
   mutate(religion = ifelse(str_detect(comment, religion_keywords), 1, 0)) %>% 
@@ -169,13 +171,71 @@ gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>%
   gather(term, comment_freq, n_sjw:n_religion, factor_key = TRUE) %>% 
   mutate(term = ifelse(term == "n_sjw", "SJW", "Religion")) %>% 
   left_join(details, by = "id") %>% 
-  mutate(comment_prop = comment_freq / total)
+  mutate(comment_prop = comment_freq / total) %>% 
+  mutate(Views = viewCount) %>% 
+  mutate(date = as_date(date)) %>% 
+  mutate(channel = as.factor(channel)) %>% 
+  mutate(channel = factor(channel, levels = rev(levels(channel)))) %>% 
+  mutate(Likes = likeCount) %>% 
+  mutate(Dislikes = dislikeCount) %>%   
+  mutate(Dislike_Ratio = Dislikes/(Likes + Dislikes)) 
 
 if (save == T) save(gg_dat, file = paste0("data/gg_", youtuber, ".Rdata"))
 
 return(gg_dat)
 
 }
+```
+
+
+## Loading for plotting
+
+```{r}
+armored_comments <- get(load("data/armored_comments.Rdata"))
+armored_details  <- get(load("data/armored_details.Rdata"))
+
+logicked_comments <- get(load("data/logicked_comments.Rdata"))
+logicked_details  <- get(load("data/logicked_details.Rdata"))
+
+thunder_comments <- get(load("data/thunder_comments.Rdata"))
+thunder_details  <- get(load("data/thunder_details.Rdata"))
+
+cultofdusty_comments <- get(load("data/cultofdusty_comments.Rdata"))
+cultofdusty_details  <- get(load("data/cultofdusty_details.Rdata"))
+
+repzion_comments <- get(load("data/repzion_comments.Rdata"))
+repzion_details  <- get(load("data/repzion_details.Rdata"))
+
+# amazingatheist_comments <- get(load("data/amazingatheist_comments.Rdata"))
+# amazingatheist_details  <- get(load("data/amazingatheist_details.Rdata"))
+```
+
+## Transform for plotting
+
+```{r}
+gg_armored <- plot_data(armored_comments, 
+                            armored_details, 
+                            "armored", save = T)
+
+gg_logicked <- plot_data(logicked_comments, 
+                            logicked_details, 
+                            "logicked", save = T)
+
+gg_thunder <- plot_data(thunder_comments, 
+                            thunder_details, 
+                            "thunder", save = T)
+
+gg_cultofdusty <- plot_data(cultofdusty_comments, 
+                            cultofdusty_details, 
+                            "cultofdusty", save = T)
+
+gg_repzion <- plot_data(repzion_comments, 
+                            repzion_details, 
+                            "repzion", save = T)
+
+# gg_amazingatheist <- plot_data(amazingatheist_comments, 
+#                             amazingatheist_details, 
+#                             "amazingatheist", save = T)
 ```
 
 
@@ -389,6 +449,37 @@ r_vs_sjw_cultofdusty
 
 ```
 
+## Mr Repzion
+
+### Comments
+
+```{r}
+repzion_comments <- get(load("data/repzion_comments.Rdata"))
+
+gg_repzion <- plot_data(repzion_comments, 
+                            repzion_details, 
+                            "repzion", save = T)
+
+
+r_vs_sjw_repzion <- gg_repzion %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  geom_point(aes(size = viewCount, alpha = 0.2)) +
+#  geom_step() +
+  geom_smooth() +
+  guides(size = F, alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Mentions of 'Religion' and 'SJW' in Mr Repzions's Comments") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video")
+
+ggsave(r_vs_sjw_repzion, file = "images/r_vs_sjw_repzion.png", width = 7, height = 5)
+
+r_vs_sjw_repzion
+
+```
+
+
 
 ## All together
 
@@ -398,20 +489,19 @@ gg_armored <- get(load("data/gg_armored.Rdata"))
 gg_logicked <- get(load("data/gg_logicked.Rdata"))
 gg_cultofdusty <- get(load("data/gg_cultofdusty.Rdata"))
 gg_thunder        <- get(load("data/gg_thunder.Rdata"))
+gg_repzion        <- get(load("data/gg_repzion.Rdata"))
 
 gg_all <- rbind(gg_amazingatheist,
                 gg_armored,
                 gg_cultofdusty,
                 gg_logicked,
-                gg_thunder)  %>% 
+                gg_thunder,
+                gg_repzion)  %>% 
   mutate(Views = viewCount) %>% 
   mutate(date = as_date(date)) %>% 
   mutate(channel = as.factor(channel)) %>% 
   mutate(channel = factor(channel, levels = rev(levels(channel))))
 
-fct_reorder(gg_all, date, .desc = TRUE)
-
-mutate()
 
 theme_set(theme_gdocs(base_size = 28)) 
 
@@ -431,20 +521,20 @@ atheismplus <- as_date("2012-08-19")
 #### gg_dates
 
 ```{r}
-gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet = F, textsize = 18, linecolor = NA) {
+gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet = "none", ncol = 2, scales = "fixed", textsize = 18, linecolor = NA, filter_from = "2000-01-01") {
   
   elevatorgate <- as_date("2011-06-20")
   gamergate <- as_date("2014-08-15")
   atheismplus <- as_date("2012-08-19")
   
-  r_vs_sjw_all_time <- dataframe %>%
-#  filter(date >= as.Date("2012-01-01")) %>% 
+  gg <- dataframe %>%
+  filter(date >= as.Date(filter_from)) %>% 
 #  filter(channel != "Logicked") %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
   scale_x_date() +
   scale_y_continuous(labels = scales::percent) +
   geom_point(aes(size = Views, alpha = 0.2)) +
-  geom_smooth(color = linecolor) +
+  geom_smooth() +
   guides(alpha = F) +
   theme_gdocs(base_size = textsize) +
   scale_color_fivethirtyeight(name = "Topic") +
@@ -452,7 +542,7 @@ gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet
   xlab("Date when Video was published") +
   ylab("Percentage of Comments per Video")
   if (events == T) {
-    r_vs_sjw_all_time <- r_vs_sjw_all_time + 
+    gg <- gg + 
       geom_segment(aes(elevatorgate, y = 0, 
                      xend = elevatorgate, 
                      yend = max(comment_prop)), 
@@ -461,7 +551,7 @@ gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet
                      color = "black") +
      annotate("text", 
              x = elevatorgate, 
-             y = -0.02, 
+             y = min(dataframe$comment_prop) - 0.02, 
              label = "''Elevatorgate''", 
              size = 7) +
      geom_segment(aes(gamergate, 
@@ -473,7 +563,7 @@ gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet
                  color = "black") +
      annotate("text", 
              x = gamergate, 
-             y = -0.02, 
+             y = min(dataframe$comment_prop) - 0.02, 
              label = "''Gamergate''", 
              size = 7) +
      geom_segment(aes(atheismplus, 
@@ -485,17 +575,25 @@ gg_dates <- function(dataframe, name, events = F, width = 14, height = 10, facet
                      color = "black") +
      annotate("text", 
              x = atheismplus, 
-             y = 0.61, label = "''Atheism+''", 
+             y = max(dataframe$comment_prop) + 0.02, label = "''Atheism+''", 
              size = 7)
   }
-  if (facet == T) {
-     r_vs_sjw_all_time <- r_vs_sjw_all_time +
-  facet_wrap(~channel + term, ncol = 2) 
+  if (facet == "channel") {
+     gg <- gg +
+  facet_wrap(~channel, ncol = ncol, scales = scales) 
+  }
+  if (facet == "channel+term") {
+     gg <- gg +
+  facet_wrap(~channel + term, ncol = ncol, scales = scales) 
+  }
+  if (!is.null(linecolor)) {
+     gg <- gg +
+      geom_smooth(color = linecolor)
   }
 
-ggsave(r_vs_sjw_all_time, file = paste0("images/", name, ".png"), width = width, height = height)
+ggsave(gg, file = paste0("images/", name, ".png"), width = width, height = height)
 
-return(r_vs_sjw_all_time)
+return(gg)
 
 }
 ```
@@ -505,10 +603,47 @@ return(r_vs_sjw_all_time)
 
 
 gg_all %>% 
-  gg_dates(name = "r_vs_sjw_all_time", events = T)
+  gg_dates(name = "ts_all", events = T)
+
+
+gg_thunder %>% 
+  gg_dates(name = "ts_thunder", events = T)
 
 gg_all %>% 
-  gg_dates(name = "r_vs_sjw_all_time_f", 
+  gg_dates(name = "ts_f_channel", 
+           events = F,
+           facet = "channel", 
+           ncol = 1,
+           scales = "free_y",
+           textsize = 23,
+           height = 18, 
+           width = 16, 
+           linecolor = "black") 
+
+gg_all %>% 
+  gg_dates(name = "ts_f_channel_zoom", 
+           filter_from = "2014-01-01",
+           events = F,
+           facet = "channel", 
+           ncol = 1,
+           scales = "free_y",
+           textsize = 23,
+           height = 14, 
+           width = 14, 
+           linecolor = "black") 
+
+gg_all %>% 
+  gg_dates(name = "ts_f_channel_term", 
+           events = F,
+           facet = "channel+term", 
+          scales = "free_y",
+           height = 15, 
+           width = 12, 
+           linecolor = "black") 
+
+gg_all %>% 
+  gg_dates(name = "r_vs_sjw_all_time_f_filtered", 
+           filter_from = "2014-01-01",
            events = F,
            facet = T, 
            height = 15, 
