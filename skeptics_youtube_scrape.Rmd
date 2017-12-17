@@ -8,7 +8,7 @@ output: html_notebook
 ```{r}
 #devtools::install_github("soodoku/tuber")
 
-pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc)
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc, janitor)
 
 ```
 
@@ -176,6 +176,8 @@ get_all_comments2 <- function(video_id = NULL, ...) {
 readkey <- function() {
     line <- readline(prompt = "Are you there? Press [enter]")
 }
+
+readkey()
 
 
 authentication <- function() {
@@ -377,7 +379,15 @@ cultofdusty_comments1 <- extract_comments(cultofdusty_ids, 1, "cultofdusty")
 
 cultofdusty_comments1 <- extract_comments(cultofdusty_ids, 122, "cultofdusty")
 
-blairewhite_comments <- blairewhite_comments1
+cultofdusty_comments <- plyr::rbind.fill(
+  get(load("data/cultofdusty_comments_1_123.Rdata")),
+  get(load("data/cultofdusty_comments_122_319.Rdata"))  
+)
+
+cultofdusty_comments %<>% 
+  distinct()
+
+save(cultofdusty_comments, file = "data/cultofdusty_comments.Rdata")
 
 ```
 

@@ -10,6 +10,8 @@ output: html_notebook
 
 pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr)
 
+options(scipen = 99999)
+
 ```
 
 # Authentication
@@ -104,14 +106,15 @@ return(details)
 # amazingatheist_details <- extract_details(amazingatheist_ids)
 # logicked_details <- extract_details(logicked_ids) 
 # thunder_details <- extract_details(thunder_ids)
-sargon_details <- extract_details(sargon_ids)
+# sargon_details <- extract_details(sargon_ids)
+cultofdusty_details <- extract_details(cultofdusty_ids)
 
 # save(armored_details, file = "data/armored_details.Rdata")
 # save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
 # save(logicked_details, file = "data/logicked_details.Rdata")
 # save(thunder_details, file = "data/thunder_details.Rdata")
-save(sargon_details, file = "data/sargon_details.Rdata")
-
+# save(sargon_details, file = "data/sargon_details.Rdata")
+save(cultofdusty_details, file = "data/cultofdusty_details.Rdata")
 ```
 
 ## load details
@@ -122,12 +125,13 @@ load("data/amazingatheist_details.Rdata")
 load("data/logicked_details.Rdata")
 load("data/thunder_details.Rdata")
 #load("data/sargon_details.Rdata")
+load("data/cultofdusty_details.Rdata")
 ```
 
 # Plot Preparation function
 
 ```{r}
-plot_data <- function(comments_dat, details) {
+plot_data <- function(comments_dat, details, youtuber, save = F) {
   
 comments_dat %<>% 
   mutate(comment = str_to_lower(textOriginal)) %>% 
@@ -167,6 +171,10 @@ gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>%
   left_join(details, by = "id") %>% 
   mutate(comment_prop = comment_freq / total)
 
+if (save == T) save(gg_dat, file = paste0("data/gg_", youtuber, ".Rdata"))
+
+return(gg_dat)
+
 }
 ```
 
@@ -181,7 +189,7 @@ gg_dat <- left_join(sjw_dat, religion_dat, by = "id") %>%
 
 load("data/armored_comments.Rdata")
 
-gg_armored <- plot_data(armored_comments, armored_details)
+gg_armored <- plot_data(armored_comments, armored_details, "armored", save = T)
 
 r_vs_sjw_armored <- gg_armored %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
@@ -259,7 +267,7 @@ gg_armored %>%
 
 load("data/logicked_comments.Rdata")
 
-gg_logicked <- plot_data(logicked_comments, logicked_details)
+gg_logicked <- plot_data(logicked_comments, logicked_details, "logicked")
 
 
 r_vs_sjw_logicked <- gg_logicked %>% 
@@ -280,12 +288,16 @@ r_vs_sjw_logicked
 ```
 
 
-## Warski
+## Amazing Atheist
 
 ### Comments
 
 ```{r}
+load("data/amazingatheist_comments.Rdata")
 
+#gg_amazingatheist <- plot_data(amazingatheist_comments, amazingatheist_details)
+
+load("data/gg_amazingatheist.Rdata")
 ```
 
 
@@ -297,7 +309,7 @@ r_vs_sjw_logicked
 
 load("data/thunder_comments.Rdata")
 
-gg_thunder <- plot_data(thunder_comments, thunder_details)
+gg_thunder <- plot_data(thunder_comments, thunder_details, "thunder")
 
 
 r_vs_sjw_thunder <- gg_thunder %>% 
@@ -347,30 +359,340 @@ ggsave(r_vs_sjw_sargon, file = "images/r_vs_sjw_sargon.png", width = 7, height =
 
 ```
 
+## Cult of Dusty
+
+### Comments
+
+```{r}
+# load("data/cultofdusty_comments.Rdata")
+
+gg_cultofdusty <- plot_data(cultofdusty_comments, 
+                            cultofdusty_details, 
+                            "cultofdusty", save = T)
+
+
+r_vs_sjw_cultofdusty <- gg_cultofdusty %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  geom_point(aes(size = comment_prop, alpha = 0.2)) +
+#  geom_step() +
+  geom_smooth() +
+  guides(size = F, alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Topic") +
+  ggtitle("Mentions of 'Religion' and 'SJW' in Cult of Dusty's Comments") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video")
+
+ggsave(r_vs_sjw_cultofdusty, file = "images/r_vs_sjw_cultofdusty.png", width = 7, height = 5)
+
+r_vs_sjw_cultofdusty
+
+```
+
+
 ## All together
 
 ```{r}
-gg_all <- rbind(plot_data(armored_comments, armored_details),
-            #     plot_data(logicked_comments, logicked_details),
-                plot_data(thunder_comments, thunder_details))
+load("data/gg_amazingatheist.Rdata")
+load("data/gg_armored.Rdata")
+load("data/gg_logicked.Rdata")
+load("data/gg_logicked.Rdata")
+load("data/gg_thunder.Rdata")
 
-r_vs_sjw_all <- gg_all %>%
+gg_all <- rbind(gg_amazingatheist,
+                gg_armored,
+                gg_cultofdusty,
+                gg_logicked,
+                gg_thunder)
+```
+
+
+### Over Time
+
+```{r}
+
+
+r_vs_sjw_all1 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
 # filter(date >= as.Date("2012-01-01")) %>% 
 #  filter(channel != "Logicked") %>% 
   ggplot(aes(date, comment_prop, group = term, color = term)) + 
-  geom_point(aes(alpha = 0.2)) +
-  geom_smooth() +
-  guides(size = F, alpha = F) +
+  geom_point(aes(size = Views, alpha = 0.2)) +
+  geom_smooth(color = "black") +
+  guides(alpha = F) +
   theme_gdocs() +
   scale_color_fivethirtyeight(name = "Term") +
   ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
   xlab("Date when Video was published") +
-  ylab("Percentage of Comments per Video")
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~channel + term, ncol = 2)
 
-ggsave(r_vs_sjw_all, file = "images/r_vs_sjw_all.png", width = 7, height = 5)
+ggsave(r_vs_sjw_all1, file = "images/r_vs_sjw_all1.png", width = 10, height = 14)
 
-r_vs_sjw_all
+r_vs_sjw_all1
+
+
+r_vs_sjw_all2 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+# filter(date >= as.Date("2012-01-01")) %>% 
+#  filter(channel != "Logicked") %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  geom_point(aes(size = Views, alpha = 0.2)) +
+  geom_smooth() +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~channel, ncol = 1)
+
+ggsave(r_vs_sjw_all2, file = "images/r_vs_sjw_all2.png", width = 10, height = 14)
+
+r_vs_sjw_all2
+
+
+r_vs_sjw_all3 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  filter(date >= as.Date("2012-01-01")) %>% 
+#  filter(channel != "Logicked") %>% 
+  ggplot(aes(date, comment_prop, group = term, color = term)) + 
+  geom_point(aes(size = Views, alpha = 0.2)) +
+  geom_smooth() +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~channel, ncol = 1)
+
+ggsave(r_vs_sjw_all3, file = "images/r_vs_sjw_all3.png", width = 10, height = 14)
+
+r_vs_sjw_all3
 ```
+
+### Set 2
+
+```{r}
+r_vs_sjw_all4 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+# filter(date >= as.Date("2012-01-01")) %>% 
+#  filter(channel != "Logicked") %>% 
+  ggplot(aes(date, Views, group = term, color = term)) + 
+  geom_point(aes(size = comment_prop, alpha = 0.00000000000000001)) +
+  geom_smooth() +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") 
+
+ggsave(r_vs_sjw_all4, file = "images/r_vs_sjw_all4.png")
+
+r_vs_sjw_all4
+
+r_vs_sjw_all5 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+#  filter(date >= as.Date("2013-01-01")) %>% 
+  filter(Views < 4000000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Views, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~term) +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all5, file = "images/r_vs_sjw_all5.png")
+
+r_vs_sjw_all5_f <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+#  filter(date >= as.Date("2013-01-01")) %>% 
+  filter(Views < 4000000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Views, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(channel~term, ncol = 2, scales = "free_y") +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all5_f, file = "images/r_vs_sjw_all5_f.png", height = 14, width = 10)
+
+r_vs_sjw_all5_f
+
+r_vs_sjw_all6 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  mutate(Likes = likeCount) %>% 
+#  filter(date >= as.Date("2013-01-01")) %>% 
+#  filter(Views < 4000000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Likes, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~term) +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all6, file = "images/r_vs_sjw_all6.png")
+
+r_vs_sjw_all6
+
+
+
+r_vs_sjw_all6_f <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  mutate(Likes = likeCount) %>% 
+#  filter(date >= as.Date("2013-01-01")) %>% 
+#  filter(Views < 4000000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Likes, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(channel~term, ncol = 2, scales = "free_y") +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all6_f, file = "images/r_vs_sjw_all6_f.png", height = 14, width = 10)
+
+r_vs_sjw_all6_f
+
+
+
+r_vs_sjw_all7 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  mutate(Likes = likeCount) %>% 
+  mutate(Dislikes = dislikeCount) %>%   
+#  filter(date >= as.Date("2013-01-01")) %>% 
+#  filter(Views < 4000000) %>% 
+  filter(Dislikes < 20000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Dislikes, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~term) +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all7, file = "images/r_vs_sjw_all7.png")
+
+r_vs_sjw_all7
+
+
+r_vs_sjw_all7_f <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  mutate(Likes = likeCount) %>% 
+  mutate(Dislikes = dislikeCount) %>%   
+#  filter(date >= as.Date("2013-01-01")) %>% 
+#  filter(Views < 4000000) %>% 
+#  filter(Dislikes < 20000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Dislikes, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(channel~term, ncol = 2, scales = "free_y") +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all7_f, file = "images/r_vs_sjw_all7_f.png", height = 14, width = 10)
+
+r_vs_sjw_all7_f
+
+
+
+
+r_vs_sjw_all8 <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  mutate(Likes = likeCount) %>% 
+  mutate(Dislikes = dislikeCount) %>%   
+  mutate(Dislike_Ratio = Dislikes/(Likes + Dislikes)) %>% 
+#  filter(date >= as.Date("2013-01-01")) %>% 
+#  filter(Views < 4000000) %>% 
+#  filter(Dislikes < 20000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Dislike_Ratio, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(~term) +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all8, file = "images/r_vs_sjw_all8.png")
+
+r_vs_sjw_all8
+
+
+r_vs_sjw_all8_f <- gg_all %>%
+  mutate(Views = viewCount) %>% 
+  mutate(Likes = likeCount) %>% 
+  mutate(Dislikes = dislikeCount) %>%   
+  mutate(Dislike_Ratio = Dislikes/(Likes + Dislikes)) %>% 
+#  filter(date >= as.Date("2013-01-01")) %>% 
+#  filter(Views < 4000000) %>% 
+#  filter(Dislikes < 20000) %>% 
+#  filter(channel != "Logicked") %>% 
+#  filter(term == "SJW") %>% 
+  ggplot(aes(comment_prop, Dislike_Ratio, color = term)) + 
+  geom_point(aes(alpha = 0.00000000000000001)) +
+  geom_smooth(color = "black", method = "lm") +
+  guides(alpha = F) +
+  theme_gdocs() +
+  scale_color_fivethirtyeight(name = "Term") +
+  ggtitle("Topics related to 'Religion' and 'SJWs' in the Skeptic Community") +
+  xlab("Date when Video was published") +
+  ylab("Percentage of Comments per Video") +
+  facet_wrap(channel~term, ncol = 2, scales = "free_y") +
+  ggpubr::stat_cor()
+
+ggsave(r_vs_sjw_all8_f, file = "images/r_vs_sjw_all8_f.png", height = 14, width = 10)
+
+r_vs_sjw_all8_f
+```
+
 
 
 # If I only knew.. unfortunately you only get 300 videos total
