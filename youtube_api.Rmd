@@ -232,11 +232,22 @@ cultofdusty_details  <- get(load("data/cultofdusty_details.Rdata"))
 repzion_comments <- get(load("data/repzion_comments.Rdata"))
 repzion_details  <- get(load("data/repzion_details.Rdata"))
 
-# amazingatheist_comments <- get(load("data/amazingatheist_comments.Rdata"))
-# amazingatheist_details  <- get(load("data/amazingatheist_details.Rdata"))
+amazingatheist_comments <- get(load("data/amazingatheist_comments.Rdata"))
+amazingatheist_details  <- get(load("data/amazingatheist_details.Rdata"))
 
-sargon_comments <- get(load("data/sargon_comments.Rdata"))
-sargon_details  <- get(load("data/sargon_details.Rdata"))
+# sargon_comments <- get(load("data/sargon_comments.Rdata"))
+# sargon_details  <- get(load("data/sargon_details.Rdata"))
+
+all_comments <- cbind(
+  rbind(armored_comments, logicked_comments, 
+        thunder_comments, cultofdusty_comments, 
+        repzion_comments, amazingatheist_comments),
+  rbind(armored_details, logicked_details, 
+        thunder_details, cultofdusty_details, 
+        repzion_details, amazingatheist_details)
+)
+
+save(all_comments, "data/all_comments.Rdata")
 ```
 
 ## SJW Transform
@@ -346,7 +357,7 @@ gg_dates <- function(dataframe, name,
                      linetype = 6, 
                      size = 1, 
                      color = "black") +
-     annotate("text", 
+     ggplot2::annotate("text", 
              x = elevatorgate, 
              y = min(dataframe$comment_prop) - 0.02, 
              label = "''Elevatorgate''", 
@@ -358,7 +369,7 @@ gg_dates <- function(dataframe, name,
                      linetype = 6, 
                      size = 1, 
                  color = "black") +
-     annotate("text", 
+     ggplot2::annotate("text", 
              x = gamergate, 
              y = min(dataframe$comment_prop) - 0.02, 
              label = "''Gamergate''", 
@@ -370,7 +381,7 @@ gg_dates <- function(dataframe, name,
                      linetype = 6, 
                      size = 1, 
                      color = "black") +
-     annotate("text", 
+     ggplot2::annotate("text", 
              x = atheismplus, 
              y = max(dataframe$comment_prop) + 0.02, label = "''Atheism+''", 
              size = 7)
@@ -571,7 +582,7 @@ gg_cultofdusty <- get(load("data/gg_cultofdusty.Rdata"))
 gg_thunder        <- get(load("data/gg_thunder.Rdata"))
 gg_repzion        <- get(load("data/gg_repzion.Rdata"))
 
-gg_all <- rbind(#gg_amazingatheist,
+gg_all <- rbind(gg_amazingatheist,
                 gg_armored,
                 gg_cultofdusty,
                 gg_logicked,
@@ -844,48 +855,6 @@ r_vs_sjw_all8_f
 ```
 
 # Sentiment Analysis
-## str_sentiment
-
-```{r}
-str_sentiment <- function(x){
-  tab <- data.frame(x = x, stringsAsFactors = F) %>%
-   dplyr::mutate(id = 1:n()) %>%
-   tidytext::unnest_tokens(word, x) 
-
-  bing <- tab %>% 
-    dplyr::inner_join(get_sentiments("bing")) %>%
-    dplyr::mutate(method = "bing")
-  
-  nrc <- tab %>% 
-    dplyr::inner_join(get_sentiments("nrc")) %>% 
-    dplyr::filter(sentiment %in% c("positive", "negative")) %>%
-    dplyr::mutate(method = "nrc")
-  
-  afinn <- tab %>% 
-    dplyr::inner_join(get_sentiments("afinn")) %>% 
-    dplyr::mutate(sentiment = ifelse(score > 0, "positive", "negative")) %>%
-    dplyr::mutate(method = "afinn", score = NULL)
-  
-  dat <- rbind(bing, nrc, afinn) %>%
-    #mutate(sent = sentiment) %>%
-    dplyr::mutate(sent = ifelse(sentiment == "positive", 1, -1)) %>%
-    dplyr::group_by(id, method) %>%
-    dplyr::summarise(sent = mean(sent)) %>% 
-    dplyr::ungroup() %>%
-    tidyr::spread(key = "method", "sent")
-
-  emotions <- tab %>% 
-    dplyr::inner_join(get_sentiments("nrc")) %>%
-    dplyr::rename(sent = sentiment) %>%
-    dplyr::group_by(id) %>%
-    dplyr::count(sent) %>%
-    tidyr::spread("sent", "n") %>%
-    dplyr::right_join(dat, by = "id")
-    
-  return(emotions)
-}
-
-```
 
 ## str_clean
 
@@ -946,6 +915,51 @@ comments_dat %<>%
   filter(nword > min_words)
 }
 ```
+
+## str_sentiment
+
+```{r}
+str_sentiment <- function(x){
+  tab <- data.frame(x = x, stringsAsFactors = F) %>%
+   dplyr::mutate(id = 1:n()) %>%
+   tidytext::unnest_tokens(word, x) 
+
+  bing <- tab %>% 
+    dplyr::inner_join(get_sentiments("bing")) %>%
+    dplyr::mutate(method = "bing")
+  
+  nrc <- tab %>% 
+    dplyr::inner_join(get_sentiments("nrc")) %>% 
+    dplyr::filter(sentiment %in% c("positive", "negative")) %>%
+    dplyr::mutate(method = "nrc")
+  
+  afinn <- tab %>% 
+    dplyr::inner_join(get_sentiments("afinn")) %>% 
+    dplyr::mutate(sentiment = ifelse(score > 0, "positive", "negative")) %>%
+    dplyr::mutate(method = "afinn", score = NULL)
+  
+  dat <- rbind(bing, nrc, afinn) %>%
+    #mutate(sent = sentiment) %>%
+    dplyr::mutate(sent = ifelse(sentiment == "positive", 1, -1)) %>%
+    dplyr::group_by(id, method) %>%
+    dplyr::summarise(sent = mean(sent)) %>% 
+    dplyr::ungroup() %>%
+    tidyr::spread(key = "method", "sent")
+
+  emotions <- tab %>% 
+    dplyr::inner_join(get_sentiments("nrc")) %>%
+    dplyr::rename(sent = sentiment) %>%
+    dplyr::group_by(id) %>%
+    dplyr::count(sent) %>%
+    tidyr::spread("sent", "n") %>%
+    dplyr::right_join(dat, by = "id")
+    
+  return(emotions)
+}
+
+```
+
+
 
 ## Cleaning Armored Skeptic
 
