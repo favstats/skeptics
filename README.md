@@ -18,13 +18,15 @@ Get all Video URLs from Channel
 
 ~~Cult of Dusty https://www.youtube.com/user/CultOfDusty~~
 
-Matt Dillahunty https://www.youtube.com/user/SansDeity/
+~~Matt Dillahunty https://www.youtube.com/user/SansDeity/~~
 
-The Atheist Experience https://www.youtube.com/user/TheAtheistExperience/
+potholer54 https://www.youtube.com/user/potholer54/
 
-The Thinking Atheist https://www.youtube.com/user/TheThinkingAtheist/
+The Atheist Experience https://www.youtube.com/user/TheAtheistExperience/ <- *disabled their comments!*
 
-Aron Ra https://www.youtube.com/user/AronRa/
+~~The Thinking Atheist https://www.youtube.com/user/TheThinkingAtheist/~~
+
+~~Aron Ra https://www.youtube.com/user/AronRa/~~
 
 Edward Current https://www.youtube.com/channel/UC20U2rjFhakOCOlvJn0MAGg
 
