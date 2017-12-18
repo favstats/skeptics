@@ -1,0 +1,73 @@
+---
+title: "Ultimate Scraper"
+output: html_notebook
+---
+
+# Packages
+
+```{r}
+#devtools::install_github("soodoku/tuber")
+
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc, janitor, tm, textstem, tidytext)
+
+```
+
+# Authentication
+
+```{r}
+key <- "AIzaSyDmV5jHx7c8GeAmpTkv6To_ERdkZ_HNl70"
+
+client_id <- "580511698053-p8mu77kktkcvb503g9q737svu9gcq101.apps.googleusercontent.com"
+
+client_key <- "Y0eW96yy-WRg90RZjVJS615o"
+
+tuber::yt_oauth(client_id, client_key)
+
+```
+
+# Loading functions
+
+```{r}
+source("functions.R")
+```
+
+# get the ids
+
+```{r}
+amazingatheist_ids  <- get_video_ids("text/amazingatheist.txt")
+armored_ids         <- get_video_ids("text/armored.txt")
+logicked_ids        <- get_video_ids("text/logicked.txt")
+thunder_ids         <- get_video_ids("text/thunder.txt")
+sargon_ids          <- get_video_ids("text/sargon.txt")
+repzion_ids         <- get_video_ids("text/repzion.txt")
+warski_ids          <- get_video_ids("text/warski.txt")
+blairewhite_ids     <- get_video_ids("text/blairewhite.txt")
+cultofdusty_ids     <- get_video_ids("text/cultofdusty.txt")
+bps_ids             <- get_video_ids("text/bps.txt")
+undoomed_ids        <- get_video_ids("text/undoomed.txt")
+aronra_ids          <- get_video_ids("text/aronra.txt")
+dillahunty_ids      <- get_video_ids("text/dillahunty.txt")
+thinkingatheist_ids <- get_video_ids("text/thinkingatheist.txt")
+molymeme_ids <- get_video_ids("text/molymeme.txt")
+
+
+all_ids <- c(amazingatheist_ids, armored_ids, logicked_ids, thunder_ids, sargon_ids, repzion_ids, warski_ids, blairewhite_ids, cultofdusty_ids, bps_ids, undoomed_ids, aronra_ids, dillahunty_ids, thinkingatheist_ids, molymeme_ids)
+
+```
+
+
+```{r}
+scrape_it_all <- function(ids, n, youtuber) {
+  
+  details <- extract_details(ids, youtuber = youtuber)
+  comments <- extract_comments(ids, n = n, youtuber = youtuber)
+  
+  all <- details %>% 
+  left_join(comments, by = "id")
+  return(all)
+}
+
+all <- scrape_it_all(all_ids, n = 1, "all")
+
+```
+

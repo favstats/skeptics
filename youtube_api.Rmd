@@ -98,23 +98,23 @@ stats <- map_df(video_ids, get_stats) %>%
 
 details <- left_join(details, stats, by = "id")
 
-cat("Done!")
+cat("Done! \n")
 return(details)
 }
 
-# armored_details <- extract_details(armored_ids)
+ armored_details <- extract_details(armored_ids)
 # amazingatheist_details <- extract_details(amazingatheist_ids)
 # logicked_details <- extract_details(logicked_ids) 
 # thunder_details <- extract_details(thunder_ids)
-sargon_details <- extract_details(sargon_ids)
+# sargon_details <- extract_details(sargon_ids)
 # cultofdusty_details <- extract_details(cultofdusty_ids)
-#repzion_details <- extract_details(repzion_ids)
+# repzion_details <- extract_details(repzion_ids)
 
 # save(armored_details, file = "data/armored_details.Rdata")
 # save(amazingatheist_details, file = "data/amazingatheist_details.Rdata")
 # save(logicked_details, file = "data/logicked_details.Rdata")
 # save(thunder_details, file = "data/thunder_details.Rdata")
-save(sargon_details, file = "data/sargon_details.Rdata")
+# save(sargon_details, file = "data/sargon_details.Rdata")
 # save(cultofdusty_details, file = "data/cultofdusty_details.Rdata")
 # save(repzion_details, file = "data/repzion_details.Rdata")
 ```

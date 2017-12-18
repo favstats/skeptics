@@ -8,7 +8,7 @@ output: html_notebook
 ```{r}
 #devtools::install_github("soodoku/tuber")
 
-pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc, janitor)
+pacman::p_load(tidyverse, tuber, magrittr, stringi, qdapRegex, purrr, lubridate, ggthemes, httr, plyr, svMisc, janitor, tm, textstem, tidytext)
 
 ```
 
@@ -250,6 +250,8 @@ extract_comments <- function(ids, n, youtuber) {
   cat(paste("\n Congratulations! You just succesfully mined", nrow(comments), "comments from", jj, "YouTube Videos"))
   return(comments)
 }
+
+
 
 ```
 
